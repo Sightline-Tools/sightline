@@ -1,0 +1,165 @@
+name: Sightline unsigned public beta release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-publish:
+    name: Build, acceptance test, and publish unsigned release
+    runs-on: windows-2025
+    timeout-minutes: 180
+    environment: public-beta
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    steps:
+      - name: Check out exact tag
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          architecture: x64
+          cache: pip
+          cache-dependency-path: requirements.lock
+
+      - name: Install locked runtime and build dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --requirement requirements.lock
+          python -m pip install pyinstaller==6.21.0 cyclonedx-bom==7.2.2
+
+      - name: Verify release version and write build metadata
+        id: version
+        shell: pwsh
+        run: |
+          python scripts/prepare_build_metadata.py --tag "${{ github.ref_name }}" --commit "${{ github.sha }}"
+          $version = (python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])").Trim()
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Generate Windows icon from Sightline favicon artwork
+        run: python scripts/generate_windows_icon.py
+
+      - name: Build verified Tesseract 5.5.2 runtime
+        shell: pwsh
+        run: ./scripts/prepare_tesseract.ps1
+
+      - name: Generate and audit third-party notices
+        run: python scripts/generate_third_party_notices.py
+
+      - name: Generate CycloneDX SBOM
+        shell: pwsh
+        run: >-
+          cyclonedx-py requirements requirements.lock --pyproject pyproject.toml
+          --mc-type application --sv 1.6 --output-reproducible --of JSON
+          -o build/Sightline.cdx.json
+
+      - name: Add native OCR components to SBOM
+        run: python scripts/augment_sbom.py
+
+      - name: Build one-folder Sightline application
+        run: pyinstaller --clean --noconfirm packaging/Sightline.spec
+
+      - name: Verify executable identity and bundled OCR
+        shell: pwsh
+        run: |
+          $exe = Resolve-Path "dist/Sightline/Sightline.exe"
+          $version = (Get-Item -LiteralPath $exe).VersionInfo.ProductVersion
+          if ($version -notlike "${{ steps.version.outputs.version }}*") {
+            throw "Executable version mismatch: $version"
+          }
+          if ((Get-AuthenticodeSignature -LiteralPath $exe).Status -ne "NotSigned") {
+            throw "The unsigned release stage unexpectedly produced a signed application"
+          }
+          & $exe --smoke-test
+          if ($LASTEXITCODE -ne 0) { throw "Packaged smoke test failed" }
+
+      - name: Install pinned, verified Inno Setup compiler
+        shell: pwsh
+        run: |
+          $compiler = ./scripts/install_inno_setup.ps1
+          "ISCC_PATH=$compiler" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Configure unsigned installer build
+        shell: pwsh
+        run: |
+          "SIGHTLINE_APP_DIR=$((Resolve-Path dist/Sightline).Path)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "SIGHTLINE_VERSION=${{ steps.version.outputs.version }}" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "SIGHTLINE_BUILD_COMMIT=${{ github.sha }}" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "SIGHTLINE_INSTALLER_OUTPUT=$((Resolve-Path .).Path)\dist\installer" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "SIGHTLINE_SIGNED_UNINSTALLER=no" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Build unsigned installer
+        shell: pwsh
+        run: |
+          & $env:ISCC_PATH packaging/Sightline.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed" }
+
+      - name: Run unsigned install, launch, OCR, upgrade, and uninstall acceptance
+        shell: pwsh
+        run: |
+          $installer = Resolve-Path "dist/installer/Sightline-Setup-x64-v${{ steps.version.outputs.version }}.exe"
+          if ($installer.Path -notlike "*.exe") { throw "Unsigned installer is missing" }
+          if ((Get-Item -LiteralPath $installer).VersionInfo.ProductVersion -notlike "${{ steps.version.outputs.version }}*${{ github.sha }}*") {
+            throw "Unsigned installer version/commit metadata mismatch"
+          }
+          ./scripts/test_installer.ps1 -InstallerPath $installer.Path -ExpectedSignatureStatus NotSigned
+
+      - name: Scan unsigned installer with Microsoft Defender
+        shell: pwsh
+        run: |
+          $installer = Resolve-Path "dist/installer/Sightline-Setup-x64-v${{ steps.version.outputs.version }}.exe"
+          $defender = Join-Path $env:ProgramFiles "Windows Defender\MpCmdRun.exe"
+          if (-not (Test-Path -LiteralPath $defender)) { throw "Microsoft Defender CLI is unavailable" }
+          & $defender -Scan -ScanType 3 -File $installer.Path -DisableRemediation
+          if ($LASTEXITCODE -ne 0) { throw "Microsoft Defender scan failed with exit code $LASTEXITCODE" }
+
+      - name: Prepare unsigned release assets and checksums
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path release -Force | Out-Null
+          $installer = Resolve-Path "dist/installer/Sightline-Setup-x64-v${{ steps.version.outputs.version }}.exe"
+          Copy-Item -LiteralPath $installer.Path -Destination release
+          Copy-Item -LiteralPath build/Sightline.cdx.json, THIRD-PARTY-NOTICES.md -Destination release
+          @"
+          This Sightline public-beta installer is intentionally unsigned.
+          Windows SmartScreen may display an Unknown publisher warning. Verify SHA256SUMS.txt before running it.
+          See CODE_SIGNING.md in the source repository for the current signing policy and verification steps.
+          "@ | Set-Content -LiteralPath release/UNSIGNED-RELEASE.txt -Encoding ascii
+          $installerName = [IO.Path]::GetFileName($installer.Path)
+          $releasedInstaller = Join-Path (Resolve-Path release).Path $installerName
+          $hash = (Get-FileHash -LiteralPath $releasedInstaller -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $installerName" | Set-Content -LiteralPath release/SHA256SUMS.txt -Encoding ascii
+
+      - name: Attest unsigned installer build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: release/Sightline-Setup-x64-v${{ steps.version.outputs.version }}.exe
+
+      - name: Upload final unsigned release bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: Sightline-Setup-x64-v${{ steps.version.outputs.version }}-unsigned
+          path: release/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub prerelease
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = Get-ChildItem -LiteralPath release -File | Select-Object -ExpandProperty FullName
+          if (-not $assets) { throw "No unsigned release assets were prepared" }
+          gh release create "${{ github.ref_name }}" $assets `
+            --verify-tag --prerelease --generate-notes `
+            --title "Sightline ${{ steps.version.outputs.version }} unsigned public beta"
