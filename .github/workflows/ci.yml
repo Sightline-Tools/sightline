@@ -1,0 +1,102 @@
+name: Sightline public CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-validation:
+    name: Public source validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out public source
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Reject private-only material
+        shell: pwsh
+        run: |
+          $forbidden = @(
+            "tests",
+            "replay",
+            ".ocr-debug",
+            "docs/superpowers",
+            "sample1.png",
+            "sample2.png",
+            "tesseract_test.py",
+            "tesseract_color_test.py",
+            "tesseract_composite_test.py"
+          )
+
+          $found = @(
+            $forbidden |
+              Where-Object { Test-Path -LiteralPath $_ }
+          )
+
+          if ($found.Count -gt 0) {
+            throw "Private-only material was exported: $($found -join ', ')"
+          }
+
+      - name: Verify required public source
+        if: ${{ hashFiles('pyproject.toml') != '' }}
+        shell: pwsh
+        run: |
+          $required = @(
+            "app",
+            "packaging",
+            "scripts",
+            "LICENSE",
+            "README.md",
+            "PRIVACY.md",
+            "SECURITY.md",
+            "pyproject.toml",
+            "requirements.lock"
+          )
+
+          $missing = @(
+            $required |
+              Where-Object { -not (Test-Path -LiteralPath $_) }
+          )
+
+          if ($missing.Count -gt 0) {
+            throw "Required public source is missing: $($missing -join ', ')"
+          }
+
+      - name: Verify public repository metadata
+        if: ${{ hashFiles('pyproject.toml') != '' }}
+        shell: python
+        run: |
+          import tomllib
+          from pathlib import Path
+
+          project = tomllib.loads(
+              Path("pyproject.toml").read_text(encoding="utf-8")
+          )["project"]
+
+          expected_repository = "https://github.com/Sightline-Tools/sightline"
+          urls = project["urls"]
+
+          assert urls["Homepage"] == expected_repository
+          assert urls["Source"] == expected_repository
+          assert urls["Issues"] == f"{expected_repository}/issues"
+
+      - name: Compile public Python source
+        if: ${{ hashFiles('pyproject.toml') != '' }}
+        run: python -m compileall -q app demo scripts
