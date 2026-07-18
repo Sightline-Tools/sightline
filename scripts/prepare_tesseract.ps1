@@ -77,13 +77,17 @@ $Components = @(
     [pscustomobject]@{ name = "Tesseract OCR"; version = "5.5.2"; license = "Apache-2.0"; source = "https://github.com/tesseract-ocr/tesseract" },
     [pscustomobject]@{ name = "tessdata_fast English model"; version = $TessdataFastCommit; license = "Apache-2.0"; source = "https://github.com/tesseract-ocr/tessdata_fast" }
 )
+$CollectedPackages = @{}
 $InstalledLines = & $VcpkgExecutable list
 foreach ($Line in $InstalledLines) {
     if ($Line -notmatch '^([^:]+):x64-windows-static\s+(\S+)') {
         continue
     }
-    $PackageName = $Matches[1]
+    $PackageName = $Matches[1] -replace '\[.*\]$', ''
     $PackageVersion = $Matches[2]
+    if ($CollectedPackages.ContainsKey($PackageName)) {
+        continue
+    }
     if (-not $ReviewedLicenses.ContainsKey($PackageName)) {
         throw "Native redistribution review is missing for vcpkg package: $PackageName"
     }
@@ -98,6 +102,7 @@ foreach ($Line in $InstalledLines) {
         license = $ReviewedLicenses[$PackageName]
         source = "https://github.com/microsoft/vcpkg/tree/$VcpkgCommit/ports/$PackageName"
     }
+    $CollectedPackages[$PackageName] = $true
 }
 $Components | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $OutputDirectory "native-components.json") -Encoding utf8
 
