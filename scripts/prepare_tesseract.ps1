@@ -42,7 +42,7 @@ if ((git -C $VcpkgSource rev-parse HEAD).Trim() -ne $VcpkgCommit) {
 $VcpkgExecutable = Join-Path $VcpkgSource "vcpkg.exe"
 & $VcpkgExecutable install leptonica:x64-windows-static
 
-cmake -S $TesseractSource -B (Join-Path $WorkDirectory "build") -G "Visual Studio 17 2022" -A x64 `
+cmake -S $TesseractSource -B (Join-Path $WorkDirectory "build") -A x64 `
     -DCMAKE_TOOLCHAIN_FILE="$VcpkgSource\scripts\buildsystems\vcpkg.cmake" `
     -DVCPKG_TARGET_TRIPLET=x64-windows-static `
     -DCMAKE_INSTALL_PREFIX=$InstallDirectory `
@@ -51,7 +51,13 @@ cmake -S $TesseractSource -B (Join-Path $WorkDirectory "build") -G "Visual Studi
     -DBUILD_TESTS=OFF `
     -DSW_BUILD=OFF `
     -DBUILD_SHARED_LIBS=OFF
+if ($LASTEXITCODE -ne 0) {
+    throw "Tesseract CMake configuration failed with exit code $LASTEXITCODE"
+}
 cmake --build (Join-Path $WorkDirectory "build") --config Release --target install --parallel
+if ($LASTEXITCODE -ne 0) {
+    throw "Tesseract CMake build failed with exit code $LASTEXITCODE"
+}
 
 Copy-Item -LiteralPath (Join-Path $InstallDirectory "bin\tesseract.exe") -Destination $OutputDirectory
 
