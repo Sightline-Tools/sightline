@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import contextlib
+import ctypes
+import os
 import queue
 import threading
 import time
@@ -9,7 +11,14 @@ from datetime import datetime
 from typing import Literal
 
 from .combat_events import StructuredCombatEvent, combat_event_bus
-from .config import CANONICAL_SELF
+from .config import (
+    CANONICAL_SELF,
+    DEFAULT_OVERLAY_FONT_FAMILY,
+    OPEN_DYSLEXIC_FONT_FAMILY,
+    SEGOE_UI_FONT_FAMILY,
+    normalize_overlay_font_family,
+)
+from .paths import resource_path
 
 FloatingTextKind = Literal["damage_out", "damage_in", "heal_in"]
 
@@ -24,6 +33,7 @@ class OverlayPositionConfig:
     damage_out_offset_x: int = 90
     damage_in_offset_x: int = -90
     heal_in_offset_y: int = 70
+    font_family: str = DEFAULT_OVERLAY_FONT_FAMILY
     font_size: int = 20
     time_to_fade_s: float = 1.0
     event_spacing: int = 18
@@ -47,6 +57,7 @@ class FloatingTextEntry:
     drift_y: float
     lifetime_s: float
     slot: int
+    font_family: str
     font_size: int
     event_spacing: int
 
@@ -54,6 +65,26 @@ class FloatingTextEntry:
 def _absolute_tk_geometry(*, width: int, height: int, x: int, y: int) -> str:
     """Return Tk geometry with absolute virtual-desktop coordinates."""
     return f"{width}x{height}+{x}+{y}"
+
+
+def _register_bundled_open_dyslexic_font() -> bool:
+    """Load the bundled font privately for this Windows process."""
+    if os.name != "nt":
+        return False
+    font_path = resource_path("app", "fonts", "OpenDyslexic-Bold.otf")
+    if not font_path.is_file():
+        return False
+    try:
+        return bool(ctypes.windll.gdi32.AddFontResourceExW(str(font_path), 0x10, None))
+    except (AttributeError, OSError):
+        return False
+
+
+def _resolved_font_family(requested: object, *, open_dyslexic_available: bool) -> str:
+    font_family = normalize_overlay_font_family(requested)
+    if font_family == OPEN_DYSLEXIC_FONT_FAMILY and not open_dyslexic_available:
+        return SEGOE_UI_FONT_FAMILY
+    return font_family
 
 
 class FloatingCombatTextOverlay:
@@ -67,6 +98,7 @@ class FloatingCombatTextOverlay:
         self._running = False
         self._stop_requested = False
         self._state_lock = threading.Lock()
+        self._open_dyslexic_available = False
         self._overlay_width = 420
         self._overlay_height = 240
 
@@ -109,6 +141,7 @@ class FloatingCombatTextOverlay:
         self._position = position
 
     def _run(self) -> None:
+        self._open_dyslexic_available = _register_bundled_open_dyslexic_font()
         try:
             import tkinter as tk
         except Exception:
@@ -213,7 +246,14 @@ class FloatingCombatTextOverlay:
                         entry.start_y + y_offset + (entry.slot * entry.event_spacing),
                         text=str(entry.value),
                         fill=text_color,
-                        font=("Segoe UI", entry.font_size, "bold"),
+                        font=(
+                            _resolved_font_family(
+                                entry.font_family,
+                                open_dyslexic_available=self._open_dyslexic_available,
+                            ),
+                            entry.font_size,
+                            "bold",
+                        ),
                     )
                     next_active.append(entry)
                 active = next_active
@@ -308,6 +348,7 @@ class FloatingCombatTextController:
                 drift_y=26,
                 lifetime_s=self._position.time_to_fade_s,
                 slot=slot,
+                font_family=self._position.font_family,
                 font_size=self._position.font_size,
                 event_spacing=self._position.event_spacing,
             )

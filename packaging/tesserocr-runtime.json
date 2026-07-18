@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "wheel": {
+    "name": "tesserocr",
+    "version": "2.10.0",
+    "filename": "tesserocr-2.10.0-cp312-cp312-win_amd64.whl",
+    "url": "https://github.com/simonflueckiger/tesserocr-windows_build/releases/download/tesserocr-v2.10.0-tesseract-5.5.2/tesserocr-2.10.0-cp312-cp312-win_amd64.whl",
+    "sha256": "e05d41a2b0e6f38f3a5195d05a73674d72152a775d1b8ebe481ca9306f94d27a",
+    "tesseract_version": "5.5.2",
+    "expected_binary_files": [
+      "tesserocr/cysignals/signals.cp312-win_amd64.pyd",
+      "tesserocr/leptonica-1.87.0.dll",
+      "tesserocr/org.sw.demo.facebook.zstd.zstd-1.5.7.dll",
+      "tesserocr/org.sw.demo.gif-5.2.2.dll",
+      "tesserocr/org.sw.demo.glennrp.png-1.6.54.dll",
+      "tesserocr/org.sw.demo.jpeg-10.0.0.dll",
+      "tesserocr/org.sw.demo.madler.zlib-1.3.2.dll",
+      "tesserocr/org.sw.demo.tiff-4.7.1.dll",
+      "tesserocr/org.sw.demo.uclouvain.openjpeg.openjp2-2.5.4.dll",
+      "tesserocr/org.sw.demo.webmproject.webp-1.6.0.dll",
+      "tesserocr/org.sw.demo.xz_utils.lzma-5.8.1.dll",
+      "tesserocr/tesseract55.dll",
+      "tesserocr/tesserocr.cp312-win_amd64.pyd"
+    ]
+  },
+  "data_files": [
+    {
+      "destination": "tessdata/eng.traineddata",
+      "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/eng.traineddata",
+      "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+    }
+  ],
+  "native_components": [
+    {
+      "name": "Tesseract OCR",
+      "version": "5.5.2",
+      "license": "Apache-2.0",
+      "source": "https://github.com/tesseract-ocr/tesseract/tree/6e1d56a847e697de07b38619356550e5cf4e8633",
+      "files": ["tesserocr/tesseract55.dll"],
+      "license_artifact": {
+        "destination": "licenses/tesseract-LICENSE.txt",
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tesseract/6e1d56a847e697de07b38619356550e5cf4e8633/LICENSE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    },
+    {
+      "name": "Leptonica",
+      "version": "1.87.0",
+      "license": "BSD-2-Clause",
+      "source": "https://github.com/DanBloomberg/leptonica/tree/13275a278eb55b5746e33f95fbf5a2c8f604b3ab",
+      "files": ["tesserocr/leptonica-1.87.0.dll"],
+      "license_artifact": {
+        "destination": "licenses/leptonica-license.txt",
+        "url": "https://raw.githubusercontent.com/DanBloomberg/leptonica/13275a278eb55b5746e33f95fbf5a2c8f604b3ab/leptonica-license.txt",
+        "sha256": "87829abb5bbb00b55a107365da89e9a33f86c4250169e5a1e5588505be7d5806"
+      }
+    },
+    {
+      "name": "zstd",
+      "version": "1.5.7",
+      "license": "BSD-3-Clause",
+      "source": "https://github.com/facebook/zstd/tree/v1.5.7",
+      "files": ["tesserocr/org.sw.demo.facebook.zstd.zstd-1.5.7.dll"],
+      "license_artifact": {
+        "destination": "licenses/zstd-LICENSE.txt",
+        "url": "https://raw.githubusercontent.com/facebook/zstd/v1.5.7/LICENSE",
+        "sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8"
+      }
+    },
+    {
+      "name": "giflib",
+      "version": "5.2.2",
+      "license": "MIT",
+      "source": "https://gitlab.com/esr/giflib/-/tags/5.2.2",
+      "files": ["tesserocr/org.sw.demo.gif-5.2.2.dll"],
+      "license_artifact": {
+        "destination": "licenses/giflib-COPYING.txt",
+        "url": "https://deb.debian.org/debian/pool/main/g/giflib/giflib_5.2.2.orig.tar.gz",
+        "sha256": "be7ffbd057cadebe2aa144542fd90c6838c6a083b5e8a9048b8ee3b66b29d5fb",
+        "archive_member": "giflib-5.2.2/COPYING",
+        "content_sha256": "0c9b7990ecdca88b676db232c226548ac408b279f550d424d996f0d83591dd8e"
+      }
+    },
+    {
+      "name": "libpng",
+      "version": "1.6.54",
+      "license": "Libpng-2.0",
+      "source": "https://github.com/pnggroup/libpng/tree/v1.6.54",
+      "files": ["tesserocr/org.sw.demo.glennrp.png-1.6.54.dll"],
+      "license_artifact": {
+        "destination": "licenses/libpng-LICENSE.txt",
+        "url": "https://raw.githubusercontent.com/pnggroup/libpng/v1.6.54/LICENSE",
+        "sha256": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526"
+      }
+    },
+    {
+      "name": "Independent JPEG Group JPEG library",
+      "version": "10",
+      "license": "IJG",
+      "source": "https://www.ijg.org/",
+      "files": ["tesserocr/org.sw.demo.jpeg-10.0.0.dll"],
+      "license_artifact": {
+        "destination": "licenses/ijg-README.txt",
+        "url": "https://www.ijg.org/files/jpegsrc.v10.tar.gz",
+        "sha256": "8b9eaa13242690ebd03e1728ab1edf97a81a78ed6e83624d493655f31ac95ab5",
+        "archive_member": "jpeg-10/README",
+        "content_sha256": "913af09f785683accdf660b85dcf27fdd567d4ad649daa95cb8771b040db79d1"
+      }
+    },
+    {
+      "name": "zlib",
+      "version": "1.3.2",
+      "license": "Zlib",
+      "source": "https://github.com/madler/zlib/tree/v1.3.2",
+      "files": ["tesserocr/org.sw.demo.madler.zlib-1.3.2.dll"],
+      "license_artifact": {
+        "destination": "licenses/zlib-LICENSE.txt",
+        "url": "https://raw.githubusercontent.com/madler/zlib/v1.3.2/LICENSE",
+        "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2"
+      }
+    },
+    {
+      "name": "libtiff",
+      "version": "4.7.1",
+      "license": "libtiff",
+      "source": "https://gitlab.com/libtiff/libtiff/-/tags/v4.7.1",
+      "files": ["tesserocr/org.sw.demo.tiff-4.7.1.dll"],
+      "license_artifact": {
+        "destination": "licenses/libtiff-LICENSE.md",
+        "url": "https://raw.githubusercontent.com/libsdl-org/libtiff/v4.7.1/LICENSE.md",
+        "sha256": "0e27c2382d7b8147972bbb746e04059a1152c8d0fda9d03ef1399d1a433c4ade"
+      }
+    },
+    {
+      "name": "OpenJPEG",
+      "version": "2.5.4",
+      "license": "BSD-2-Clause",
+      "source": "https://github.com/uclouvain/openjpeg/tree/v2.5.4",
+      "files": ["tesserocr/org.sw.demo.uclouvain.openjpeg.openjp2-2.5.4.dll"],
+      "license_artifact": {
+        "destination": "licenses/openjpeg-LICENSE.txt",
+        "url": "https://raw.githubusercontent.com/uclouvain/openjpeg/v2.5.4/LICENSE",
+        "sha256": "a6af136f3e15038a666b61f376612a07d9a4e48cb7c01adbf3e33b3f14ab49b6"
+      }
+    },
+    {
+      "name": "libwebp",
+      "version": "1.6.0",
+      "license": "BSD-3-Clause",
+      "source": "https://github.com/webmproject/libwebp/tree/v1.6.0",
+      "files": ["tesserocr/org.sw.demo.webmproject.webp-1.6.0.dll"],
+      "license_artifact": {
+        "destination": "licenses/libwebp-COPYING.txt",
+        "url": "https://raw.githubusercontent.com/webmproject/libwebp/v1.6.0/COPYING",
+        "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf"
+      }
+    },
+    {
+      "name": "XZ Utils liblzma",
+      "version": "5.8.1",
+      "license": "0BSD",
+      "source": "https://github.com/tukaani-project/xz/tree/v5.8.1",
+      "files": ["tesserocr/org.sw.demo.xz_utils.lzma-5.8.1.dll"],
+      "license_artifact": {
+        "destination": "licenses/xz-COPYING.txt",
+        "url": "https://raw.githubusercontent.com/tukaani-project/xz/v5.8.1/COPYING",
+        "sha256": "616a3ad264ce29b8f1cb97e53037b139d406899ca8d1f799651e17bfa09830b8"
+      }
+    },
+    {
+      "name": "cysignals (vendored)",
+      "version": "1.12.6",
+      "license": "LGPL-3.0-or-later",
+      "source": "https://github.com/sagemath/cysignals/tree/1.12.6",
+      "files": ["tesserocr/cysignals/signals.cp312-win_amd64.pyd"],
+      "license_artifact": {
+        "destination": "licenses/cysignals-LICENSE.txt",
+        "url": "https://raw.githubusercontent.com/sagemath/cysignals/1.12.6/LICENSE",
+        "sha256": "da7eabb7bafdf7d3ae5e9f223aa5bdc1eece45ac569dc21b3b037520b4464768"
+      }
+    },
+    {
+      "name": "tessdata_fast English model",
+      "version": "87416418657359cb625c412a48b6e1d6d41c29bd",
+      "license": "Apache-2.0",
+      "source": "https://github.com/tesseract-ocr/tessdata_fast/tree/87416418657359cb625c412a48b6e1d6d41c29bd",
+      "files": ["tessdata/eng.traineddata"],
+      "license_artifact": {
+        "destination": "licenses/tessdata-fast-LICENSE.txt",
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_fast/87416418657359cb625c412a48b6e1d6d41c29bd/LICENSE",
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    }
+  ]
+}

@@ -13,6 +13,7 @@ from packaging.utils import canonicalize_name
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PACKAGED_TESSEROCR_VERSION = "2.10.0"
 LOCK_PATTERN = re.compile(r"^([A-Za-z0-9_.-]+)==([^\s;]+)")
 LICENSE_FILENAME_PATTERN = re.compile(
     r"^(?:licenses?|licences?|copying|notice)(?:$|[._-])",
@@ -79,6 +80,26 @@ def main() -> int:
     if any("proprietary" in license_id.lower() for license_id in allowed.values()):
         raise SystemExit("Proprietary dependency blocked by redistribution policy")
 
+    font_policy = policy.get("fonts", {})
+    expected_fonts = {"OpenDyslexic Bold"}
+    if set(font_policy) != expected_fonts:
+        raise SystemExit(
+            f"Bundled-font redistribution review mismatch; expected={sorted(expected_fonts)}, "
+            f"reviewed={sorted(font_policy)}"
+        )
+    font_dir = ROOT / "app" / "fonts"
+    required_font_files = (
+        font_dir / "OpenDyslexic-Bold.otf",
+        font_dir / "OFL.txt",
+        font_dir / "OFL-FAQ.txt",
+    )
+    missing_font_files = [str(path) for path in required_font_files if not path.is_file()]
+    if missing_font_files:
+        raise SystemExit(f"Bundled OpenDyslexic files are missing: {missing_font_files}")
+    open_dyslexic_license = (font_dir / "OFL.txt").read_text(encoding="utf-8")
+    if "Reserved Font Name OpenDyslexic" not in open_dyslexic_license or "SIL OPEN FONT LICENSE Version 1.1" not in open_dyslexic_license:
+        raise SystemExit("Bundled OpenDyslexic license notice is incomplete")
+
     if args.license_dir.exists():
         shutil.rmtree(args.license_dir)
     args.license_dir.mkdir(parents=True)
@@ -96,7 +117,12 @@ def main() -> int:
         raise SystemExit(f"License text missing from installed distributions: {missing_license_files}")
 
     bundled_policy = policy.get("bundled", {})
-    expected_bundled = {"CPython Windows runtime", "PyInstaller bootloader", "Tcl/Tk runtime"}
+    expected_bundled = {
+        "CPython Windows runtime",
+        "PyInstaller bootloader",
+        "Tcl/Tk runtime",
+        "tesserocr Windows extension",
+    }
     if set(bundled_policy) != expected_bundled:
         raise SystemExit(
             f"Bundled-runtime redistribution review mismatch; expected={sorted(expected_bundled)}, "
@@ -120,6 +146,13 @@ def main() -> int:
     pyinstaller = metadata.distribution("pyinstaller")
     if copy_license_files(pyinstaller, args.license_dir) == 0:
         raise SystemExit("PyInstaller bootloader license text is missing")
+    packaged_tesserocr = metadata.distribution("tesserocr")
+    if packaged_tesserocr.version != PACKAGED_TESSEROCR_VERSION:
+        raise SystemExit(
+            f"Installed tesserocr {packaged_tesserocr.version} does not match packaged {PACKAGED_TESSEROCR_VERSION}"
+        )
+    if copy_license_files(packaged_tesserocr, args.license_dir) == 0:
+        raise SystemExit("tesserocr license text is missing")
     bundled_components = [
         {
             "name": "CPython Windows runtime",
@@ -139,6 +172,12 @@ def main() -> int:
             "license": bundled_policy["Tcl/Tk runtime"],
             "source": "https://core.tcl-lang.org/tk/",
         },
+        {
+            "name": "tesserocr Windows extension",
+            "version": packaged_tesserocr.version,
+            "license": bundled_policy["tesserocr Windows extension"],
+            "source": "https://github.com/sirfz/tesserocr",
+        },
     ]
     args.bundled_manifest.parent.mkdir(parents=True, exist_ok=True)
     args.bundled_manifest.write_text(json.dumps(bundled_components, indent=2) + "\n", encoding="utf-8")
@@ -146,7 +185,7 @@ def main() -> int:
     output = [
         "# Sightline third-party notices",
         "",
-        "This file is generated from `requirements.lock` and the reviewed redistribution policy. The corresponding license texts are bundled in Sightline's `licenses` directory.",
+        "This file is generated from `requirements.lock`, the release-pinned packaged runtime, and the reviewed redistribution policy. Dependency license texts are bundled in Sightline's `licenses` directory. The OpenDyslexic license and FAQ are bundled beside the font under `app/fonts`.",
         "",
         "| Component | Version | License | Source |",
         "|---|---:|---|---|",
@@ -171,6 +210,9 @@ def main() -> int:
     else:
         for name, license_id in policy["native"].items():
             output.append(f"| {name} | release-pinned | {license_id} | release build manifest |")
+    output.extend(["", "## Bundled font", "", "| Component | Version | License | Source |", "|---|---:|---|---|"])
+    for name, font in font_policy.items():
+        output.append(f"| {name} | {font['version']} | {font['license']} | {font['source']} |")
     output.extend(
         [
             "",

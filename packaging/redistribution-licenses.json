@@ -38,26 +38,29 @@
   "bundled": {
     "CPython Windows runtime": "PSF-2.0 AND LicenseRef-Microsoft-Python-Distributable-Code",
     "PyInstaller bootloader": "GPL-2.0-or-later WITH Bootloader-exception",
-    "Tcl/Tk runtime": "TCL"
+    "Tcl/Tk runtime": "TCL",
+    "tesserocr Windows extension": "MIT"
+  },
+  "fonts": {
+    "OpenDyslexic Bold": {
+      "version": "0.92",
+      "license": "OFL-1.1",
+      "source": "bundled font metadata and app/fonts/OFL.txt"
+    }
   },
   "native": {
-    "Tesseract OCR 5.5.2": "Apache-2.0",
-    "tessdata_fast English model": "Apache-2.0",
-    "Leptonica": "BSD-2-Clause"
-  },
-  "native_packages": {
-    "bzip2": "bzip2-1.0.6",
+    "Tesseract OCR": "Apache-2.0",
+    "Leptonica": "BSD-2-Clause",
+    "zstd": "BSD-3-Clause",
     "giflib": "MIT",
-    "leptonica": "BSD-2-Clause",
-    "lerc": "Apache-2.0",
-    "libdeflate": "MIT",
-    "libjpeg-turbo": "BSD-3-Clause AND IJG AND Zlib",
-    "liblzma": "0BSD",
     "libpng": "Libpng-2.0",
-    "libwebp": "BSD-3-Clause",
-    "openjpeg": "BSD-2-Clause",
-    "tiff": "libtiff",
+    "Independent JPEG Group JPEG library": "IJG",
     "zlib": "Zlib",
-    "zstd": "BSD-3-Clause"
+    "libtiff": "libtiff",
+    "OpenJPEG": "BSD-2-Clause",
+    "libwebp": "BSD-3-Clause",
+    "XZ Utils liblzma": "0BSD",
+    "cysignals (vendored)": "LGPL-3.0-or-later",
+    "tessdata_fast English model": "Apache-2.0"
   }
 }

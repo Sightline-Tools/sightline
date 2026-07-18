@@ -15,6 +15,7 @@ from .config import (
     RuntimeSettings,
     normalize_executable_name,
     normalize_executable_names,
+    normalize_overlay_font_family,
 )
 from .combat_events import combat_event_bus
 from .db import ParserSession, SessionLocal, SessionLogLine, SettingsModel
@@ -113,6 +114,7 @@ class ParserService:
                 manual_end_hotkey_binding=model.manual_end_hotkey_binding,
                 encounter_filter_mode=(model.encounter_filter_mode or "none").lower(),
                 encounter_party_members=model.encounter_party_members or [],
+                floating_combat_text_enabled=model.floating_combat_text_enabled,
                 overlay_monitor_index=model.overlay_monitor_index,
                 overlay_anchor_x_ratio=model.overlay_anchor_x_ratio,
                 overlay_anchor_y_ratio=model.overlay_anchor_y_ratio,
@@ -121,6 +123,7 @@ class ParserService:
                 overlay_damage_out_offset_x=model.overlay_damage_out_offset_x,
                 overlay_damage_in_offset_x=model.overlay_damage_in_offset_x,
                 overlay_heal_in_offset_y=model.overlay_heal_in_offset_y,
+                overlay_font_family=normalize_overlay_font_family(model.overlay_font_family),
                 overlay_font_size=model.overlay_font_size,
                 overlay_time_to_fade_s=model.overlay_time_to_fade_s,
                 overlay_event_spacing=model.overlay_event_spacing,
@@ -185,6 +188,7 @@ class ParserService:
                 if len(sanitized_party_members) >= 5:
                     break
             model.encounter_party_members = sanitized_party_members if mode == "party" else []
+            model.floating_combat_text_enabled = settings.floating_combat_text_enabled
             model.overlay_monitor_index = settings.overlay_monitor_index
             model.overlay_anchor_x_ratio = settings.overlay_anchor_x_ratio
             model.overlay_anchor_y_ratio = settings.overlay_anchor_y_ratio
@@ -193,6 +197,8 @@ class ParserService:
             model.overlay_damage_out_offset_x = settings.overlay_damage_out_offset_x
             model.overlay_damage_in_offset_x = settings.overlay_damage_in_offset_x
             model.overlay_heal_in_offset_y = settings.overlay_heal_in_offset_y
+            settings.overlay_font_family = normalize_overlay_font_family(settings.overlay_font_family)
+            model.overlay_font_family = settings.overlay_font_family
             model.overlay_font_size = settings.overlay_font_size
             model.overlay_time_to_fade_s = settings.overlay_time_to_fade_s
             model.overlay_event_spacing = settings.overlay_event_spacing
@@ -201,8 +207,8 @@ class ParserService:
             model.visible_columns = settings.visible_columns
             db.commit()
         with self._lock:
-            if self._overlay_requested_by_parser or self._overlay_requested_manually:
-                self._sync_overlay_state()
+            self._overlay_requested_by_parser = self._running and settings.floating_combat_text_enabled
+            self._sync_overlay_state()
         return settings
 
     def start(self) -> None:
@@ -210,7 +216,7 @@ class ParserService:
             if self._running:
                 return
             self._open_parser_session(file_path=None)
-            self._overlay_requested_by_parser = True
+            self._overlay_requested_by_parser = self.load_settings().floating_combat_text_enabled
             self._sync_overlay_state()
             self._running = True
             self._thread = threading.Thread(target=self._loop, daemon=True)
@@ -282,6 +288,7 @@ class ParserService:
                     damage_out_offset_x=settings.overlay_damage_out_offset_x,
                     damage_in_offset_x=settings.overlay_damage_in_offset_x,
                     heal_in_offset_y=settings.overlay_heal_in_offset_y,
+                    font_family=settings.overlay_font_family,
                     font_size=settings.overlay_font_size,
                     time_to_fade_s=settings.overlay_time_to_fade_s,
                     event_spacing=settings.overlay_event_spacing,
@@ -637,12 +644,18 @@ class ParserService:
             self.last_skip_reason = None
             return False
 
+        allowed_executables = set(normalize_executable_names(settings.allowed_focus_executables))
+        if not allowed_executables:
+            self.last_error = None
+            self.last_skip_reason = "focus_not_allowed"
+            return True
+
         focused_executable = get_foreground_process_name()
         if focused_executable is None:
-            self.last_skip_reason = None
-            return False
+            self.last_error = None
+            self.last_skip_reason = "focus_lookup_failed"
+            return True
 
-        allowed_executables = set(normalize_executable_names(settings.allowed_focus_executables))
         if normalize_executable_name(focused_executable) in allowed_executables:
             self.last_skip_reason = None
             return False

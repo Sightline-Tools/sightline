@@ -94,6 +94,7 @@ def normalize_text(text: str) -> str:
     lowered = without_timestamp.lower().replace("|", " ")
     normalized_quotes = lowered.replace("â€™", "'").replace("’", "'").replace("‘", "'").replace("`", "'")
     normalized_quotes = re.sub(r"'{2,}", "'", normalized_quotes)
+    normalized_quotes = re.sub(r"^'(?=your?\b)", "", normalized_quotes)
     stripped_punct = re.sub(r"[^\w\s']", " ", normalized_quotes)
     return re.sub(r"\s+", " ", stripped_punct).strip()
 

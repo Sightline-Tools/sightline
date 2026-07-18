@@ -63,6 +63,7 @@ class SettingsModel(Base):
     manual_end_hotkey_binding: Mapped[str] = mapped_column(String(64), default="Shift+F3")
     encounter_filter_mode: Mapped[str] = mapped_column(String(16), default="none")
     encounter_party_members: Mapped[list] = mapped_column(JSON, default=list)
+    floating_combat_text_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     overlay_monitor_index: Mapped[int] = mapped_column(Integer, default=0)
     overlay_anchor_x_ratio: Mapped[float] = mapped_column(Float, default=0.5)
     overlay_anchor_y_ratio: Mapped[float] = mapped_column(Float, default=0.5)
@@ -71,6 +72,7 @@ class SettingsModel(Base):
     overlay_damage_out_offset_x: Mapped[int] = mapped_column(Integer, default=90)
     overlay_damage_in_offset_x: Mapped[int] = mapped_column(Integer, default=-90)
     overlay_heal_in_offset_y: Mapped[int] = mapped_column(Integer, default=70)
+    overlay_font_family: Mapped[str] = mapped_column(String(32), default="OpenDyslexic")
     overlay_font_size: Mapped[int] = mapped_column(Integer, default=20)
     overlay_time_to_fade_s: Mapped[float] = mapped_column(Float, default=1.0)
     overlay_event_spacing: Mapped[int] = mapped_column(Integer, default=18)
@@ -359,6 +361,7 @@ def _migrate_settings_table(db_engine) -> None:
         "manual_end_hotkey_binding": "VARCHAR(64) DEFAULT 'Shift+F3'",
         "encounter_filter_mode": "VARCHAR(16) DEFAULT 'none'",
         "encounter_party_members": "JSON",
+        "floating_combat_text_enabled": "BOOLEAN DEFAULT 0",
         "overlay_monitor_index": "INTEGER DEFAULT 0",
         "overlay_anchor_x_ratio": "FLOAT DEFAULT 0.5",
         "overlay_anchor_y_ratio": "FLOAT DEFAULT 0.5",
@@ -367,6 +370,7 @@ def _migrate_settings_table(db_engine) -> None:
         "overlay_damage_out_offset_x": "INTEGER DEFAULT 90",
         "overlay_damage_in_offset_x": "INTEGER DEFAULT -90",
         "overlay_heal_in_offset_y": "INTEGER DEFAULT 70",
+        "overlay_font_family": "VARCHAR(32) DEFAULT 'OpenDyslexic'",
         "overlay_font_size": "INTEGER DEFAULT 20",
         "overlay_time_to_fade_s": "FLOAT DEFAULT 1.0",
         "overlay_event_spacing": "INTEGER DEFAULT 18",

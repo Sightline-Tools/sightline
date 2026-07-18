@@ -1,13 +1,25 @@
 from __future__ import annotations
 
 import ctypes
-import os
+import ntpath
 import sys
+import threading
 from ctypes import wintypes
 
 
-PROCESS_QUERY_INFORMATION = 0x0400
-PROCESS_VM_READ = 0x0010
+PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+
+_cache_lock = threading.Lock()
+_cached_foreground_identity: tuple[int, int] | None = None
+_cached_foreground_process_name: str | None = None
+
+
+def _reset_foreground_process_cache() -> None:
+    """Clear the foreground process cache (used when focus is unavailable and by tests)."""
+    global _cached_foreground_identity, _cached_foreground_process_name
+    with _cache_lock:
+        _cached_foreground_identity = None
+        _cached_foreground_process_name = None
 
 
 def get_foreground_process_name() -> str | None:
@@ -17,47 +29,60 @@ def get_foreground_process_name() -> str | None:
 
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    psapi = ctypes.WinDLL("psapi", use_last_error=True)
 
     user32.GetForegroundWindow.restype = wintypes.HWND
     user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
     user32.GetWindowThreadProcessId.restype = wintypes.DWORD
     kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
     kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.QueryFullProcessImageNameW.argtypes = [
+        wintypes.HANDLE,
+        wintypes.DWORD,
+        wintypes.LPWSTR,
+        ctypes.POINTER(wintypes.DWORD),
+    ]
+    kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
     kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
     kernel32.CloseHandle.restype = wintypes.BOOL
-    psapi.GetModuleBaseNameW.argtypes = [
-        wintypes.HANDLE,
-        wintypes.HMODULE,
-        wintypes.LPWSTR,
-        wintypes.DWORD,
-    ]
-    psapi.GetModuleBaseNameW.restype = wintypes.DWORD
 
     hwnd = user32.GetForegroundWindow()
     if not hwnd:
+        _reset_foreground_process_cache()
         return None
 
     process_id = wintypes.DWORD()
     user32.GetWindowThreadProcessId(hwnd, ctypes.byref(process_id))
     if process_id.value == 0:
+        _reset_foreground_process_cache()
         return None
 
-    process_handle = kernel32.OpenProcess(
-        PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-        False,
-        process_id.value,
-    )
-    if not process_handle:
-        return None
+    foreground_identity = (int(hwnd), process_id.value)
+    global _cached_foreground_identity, _cached_foreground_process_name
+    with _cache_lock:
+        if foreground_identity == _cached_foreground_identity:
+            return _cached_foreground_process_name
 
-    try:
-        buffer_size = 260
-        name_buffer = ctypes.create_unicode_buffer(buffer_size)
-        written = psapi.GetModuleBaseNameW(process_handle, None, name_buffer, buffer_size)
-        if written == 0:
-            return None
-        executable = os.path.basename(name_buffer.value).strip().lower()
-        return executable or None
-    finally:
-        kernel32.CloseHandle(process_handle)
+        process_handle = kernel32.OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION,
+            False,
+            process_id.value,
+        )
+        executable: str | None = None
+        if process_handle:
+            try:
+                buffer_size = wintypes.DWORD(32768)
+                name_buffer = ctypes.create_unicode_buffer(buffer_size.value)
+                succeeded = kernel32.QueryFullProcessImageNameW(
+                    process_handle,
+                    0,
+                    name_buffer,
+                    ctypes.byref(buffer_size),
+                )
+                if succeeded:
+                    executable = ntpath.basename(name_buffer.value).strip().lower() or None
+            finally:
+                kernel32.CloseHandle(process_handle)
+
+        _cached_foreground_identity = foreground_identity
+        _cached_foreground_process_name = executable
+        return executable

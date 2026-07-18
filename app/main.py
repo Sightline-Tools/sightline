@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 import re
 import sys
-from typing import Any
+from typing import Any, Literal
 import zipfile
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
@@ -79,6 +79,7 @@ class SettingsDTO(BaseModel):
     manual_end_hotkey_binding: str = "Shift+F3"
     encounter_filter_mode: str = "none"
     encounter_party_members: list[dict[str, str | None] | str] = Field(default_factory=list)
+    floating_combat_text_enabled: bool = False
     overlay_monitor_index: int = 0
     overlay_anchor_x_ratio: float = 0.5
     overlay_anchor_y_ratio: float = 0.5
@@ -87,6 +88,7 @@ class SettingsDTO(BaseModel):
     overlay_damage_out_offset_x: int = 90
     overlay_damage_in_offset_x: int = -90
     overlay_heal_in_offset_y: int = 70
+    overlay_font_family: Literal["OpenDyslexic", "Segoe UI"] = "OpenDyslexic"
     overlay_font_size: int = 20
     overlay_time_to_fade_s: float = 1.0
     overlay_event_spacing: int = 18
@@ -345,6 +347,8 @@ def _diagnostic_settings(settings: RuntimeSettings) -> dict[str, Any]:
         "increase_accuracy": settings.increase_accuracy,
         "allowed_focus_executable_count": len(settings.allowed_focus_executables),
         "ocr_passes_enabled": settings.ocr_passes_enabled,
+        "floating_combat_text_enabled": settings.floating_combat_text_enabled,
+        "overlay_font_family": settings.overlay_font_family,
         "overlay_monitor_index": settings.overlay_monitor_index,
     }
 
@@ -365,6 +369,7 @@ def _sanitized_backend_status() -> dict[str, Any]:
     return {
         "last_backend": value.get("last_backend"),
         "tesserocr_calls": value.get("tesserocr_calls", 0),
+        "tesserocr_initializations": value.get("tesserocr_initializations", 0),
         "pytesseract_calls": value.get("pytesseract_calls", 0),
         "tesserocr_fallback_runtime_errors": value.get("tesserocr_fallback_runtime_errors", 0),
         "last_tesserocr_error_present": bool(value.get("last_tesserocr_error")),
@@ -459,6 +464,8 @@ def overlay_status() -> dict[str, bool]:
 @app.post("/api/replay/start")
 def start_replay(payload: ReplayStartRequest) -> dict[str, str]:
     _require_debug_mode()
+    if payload.force_pytesseract and IS_FROZEN:
+        raise HTTPException(status_code=400, detail="The CLI OCR backend is available only in development/source runs")
     if service.status()["running"]:
         raise HTTPException(status_code=409, detail="Live parser capture is running; stop it before replay")
     replay_runner.start(ReplayConfig(**payload.model_dump()))
