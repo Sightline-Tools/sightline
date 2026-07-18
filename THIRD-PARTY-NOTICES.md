@@ -1,6 +1,6 @@
 # Sightline third-party notices
 
-This file is generated from `requirements.lock` and the reviewed redistribution policy. The corresponding license texts are bundled in Sightline's `licenses` directory.
+This file is generated from `requirements.lock`, the release-pinned packaged runtime, and the reviewed redistribution policy. Dependency license texts are bundled in Sightline's `licenses` directory. The OpenDyslexic license and FAQ are bundled beside the font under `app/fonts`.
 
 | Component | Version | License | Source |
 |---|---:|---|---|
@@ -46,13 +46,30 @@ This file is generated from `requirements.lock` and the reviewed redistribution 
 | CPython Windows runtime | 3.12.13 | PSF-2.0 AND LicenseRef-Microsoft-Python-Distributable-Code | [source](https://github.com/python/cpython) |
 | PyInstaller bootloader | 6.21.0 | GPL-2.0-or-later WITH Bootloader-exception | [source](https://github.com/pyinstaller/pyinstaller) |
 | Tcl/Tk runtime | 8.6 | TCL | [source](https://core.tcl-lang.org/tk/) |
+| tesserocr Windows extension | 2.10.0 | MIT | [source](https://github.com/sirfz/tesserocr) |
 
 ## Native OCR components
 
 | Component | Version | License | Source |
 |---|---:|---|---|
-| Tesseract OCR 5.5.2 | release-pinned | Apache-2.0 | release build manifest |
-| tessdata_fast English model | release-pinned | Apache-2.0 | release build manifest |
-| Leptonica | release-pinned | BSD-2-Clause | release build manifest |
+| Tesseract OCR | 5.5.2 | Apache-2.0 | [source](https://github.com/tesseract-ocr/tesseract/tree/6e1d56a847e697de07b38619356550e5cf4e8633) |
+| Leptonica | 1.87.0 | BSD-2-Clause | [source](https://github.com/DanBloomberg/leptonica/tree/13275a278eb55b5746e33f95fbf5a2c8f604b3ab) |
+| zstd | 1.5.7 | BSD-3-Clause | [source](https://github.com/facebook/zstd/tree/v1.5.7) |
+| giflib | 5.2.2 | MIT | [source](https://gitlab.com/esr/giflib/-/tags/5.2.2) |
+| libpng | 1.6.54 | Libpng-2.0 | [source](https://github.com/pnggroup/libpng/tree/v1.6.54) |
+| Independent JPEG Group JPEG library | 10 | IJG | [source](https://www.ijg.org/) |
+| zlib | 1.3.2 | Zlib | [source](https://github.com/madler/zlib/tree/v1.3.2) |
+| libtiff | 4.7.1 | libtiff | [source](https://gitlab.com/libtiff/libtiff/-/tags/v4.7.1) |
+| OpenJPEG | 2.5.4 | BSD-2-Clause | [source](https://github.com/uclouvain/openjpeg/tree/v2.5.4) |
+| libwebp | 1.6.0 | BSD-3-Clause | [source](https://github.com/webmproject/libwebp/tree/v1.6.0) |
+| XZ Utils liblzma | 5.8.1 | 0BSD | [source](https://github.com/tukaani-project/xz/tree/v5.8.1) |
+| cysignals (vendored) | 1.12.6 | LGPL-3.0-or-later | [source](https://github.com/sagemath/cysignals/tree/1.12.6) |
+| tessdata_fast English model | 87416418657359cb625c412a48b6e1d6d41c29bd | Apache-2.0 | [source](https://github.com/tesseract-ocr/tessdata_fast/tree/87416418657359cb625c412a48b6e1d6d41c29bd) |
+
+## Bundled font
+
+| Component | Version | License | Source |
+|---|---:|---|---|
+| OpenDyslexic Bold | 0.92 | OFL-1.1 | bundled font metadata and app/fonts/OFL.txt |
 
 Sightline itself is licensed under AGPL-3.0-only. Inclusion in this notice is not an endorsement by any third-party author.

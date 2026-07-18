@@ -18,7 +18,7 @@ def _project_version() -> str:
     if not IS_FROZEN and pyproject.is_file():
         with pyproject.open("rb") as handle:
             return str(tomllib.load(handle)["project"]["version"])
-    return "0.1.0"
+    return "0.1.1"
 
 
 def _build_info() -> dict[str, str]:
@@ -51,4 +51,5 @@ def app_info(*, debug_mode: bool = False) -> dict[str, str | bool]:
         "code_signing_url": "/legal/code-signing",
         "security_url": "/legal/security",
         "debug_mode": debug_mode,
+        "packaged": IS_FROZEN,
     }

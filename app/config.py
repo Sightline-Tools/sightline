@@ -12,6 +12,20 @@ DEBUG_ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
 # from Settings. New profiles rely on the explicitly selected capture rectangle
 # until the user opts into executable filtering.
 DEFAULT_ALLOWED_FOCUS_EXECUTABLES: tuple[str, ...] = ()
+OPEN_DYSLEXIC_FONT_FAMILY = "OpenDyslexic"
+SEGOE_UI_FONT_FAMILY = "Segoe UI"
+OVERLAY_FONT_FAMILIES = (OPEN_DYSLEXIC_FONT_FAMILY, SEGOE_UI_FONT_FAMILY)
+DEFAULT_OVERLAY_FONT_FAMILY = OPEN_DYSLEXIC_FONT_FAMILY
+
+
+def normalize_overlay_font_family(value: object) -> str:
+    """Return a supported floating-combat-text font family."""
+    requested = str(value or "").strip().casefold()
+    for font_family in OVERLAY_FONT_FAMILIES:
+        if requested == font_family.casefold():
+            return font_family
+    return DEFAULT_OVERLAY_FONT_FAMILY
+
 
 def normalize_executable_name(value: object) -> str | None:
     """Return a lowercase executable basename with an .exe suffix."""
@@ -63,6 +77,7 @@ class RuntimeSettings:
     manual_end_hotkey_binding: str = "Shift+F3"
     encounter_filter_mode: str = "none"
     encounter_party_members: list[dict[str, str | None] | str] = field(default_factory=list)
+    floating_combat_text_enabled: bool = False
     overlay_monitor_index: int = 0
     overlay_anchor_x_ratio: float = 0.5
     overlay_anchor_y_ratio: float = 0.5
@@ -71,6 +86,7 @@ class RuntimeSettings:
     overlay_damage_out_offset_x: int = 90
     overlay_damage_in_offset_x: int = -90
     overlay_heal_in_offset_y: int = 70
+    overlay_font_family: str = DEFAULT_OVERLAY_FONT_FAMILY
     overlay_font_size: int = 20
     overlay_time_to_fade_s: float = 1.0
     overlay_event_spacing: int = 18

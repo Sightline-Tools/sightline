@@ -164,7 +164,7 @@
         </div>
       </div>
       <div class="inline">
-        <label><input id="forcePytesseract" type="checkbox"/> Force pytesseract (disable tesserocr)</label>
+        <label id="forcePytesseractControl"><input id="forcePytesseract" type="checkbox"/> Force pytesseract (development only)</label>
       </div>
       <div class="inline">
         <button onclick="startReplay()">Run Replay</button>
@@ -313,6 +313,7 @@ async function refreshReplayStatus(){
     `ocr backend last used: ${backend.last_backend ?? 'n/a'}`,
     `forced backend: ${backend.forced_backend ?? 'none'}`,
     `tesserocr calls: ${backend.tesserocr_calls ?? 0}`,
+    `tesserocr initializations: ${backend.tesserocr_initializations ?? 0}`,
     `pytesseract calls: ${backend.pytesseract_calls ?? 0}`,
     `tesserocr runtime fallbacks: ${backend.tesserocr_fallback_runtime_errors ?? 0}`,
     `last tesserocr error: ${backend.last_tesserocr_error ?? 'none'}`,
@@ -407,6 +408,8 @@ const statusLine = document.getElementById('statusLine');
 const sessionInfo = document.getElementById('sessionInfo');
 const compareResult = document.getElementById('compareResult');
 const startParserBtn = document.getElementById('startParserBtn');
+const forcePytesseract = document.getElementById('forcePytesseract');
+const forcePytesseractControl = document.getElementById('forcePytesseractControl');
 
 const showChangedOnly = document.createElement('input');
 showChangedOnly.type = 'checkbox';
@@ -420,7 +423,16 @@ function updateParserControls(replayRunning){
   startParserBtn.title = replayRunning ? 'Stop replay before starting live parser capture.' : '';
 }
 
-refreshReplayStatus();
+async function initializeReplayPage(){
+  const appInfo = await api('/api/app-info');
+  if(appInfo.packaged){
+    forcePytesseract.checked = false;
+    forcePytesseractControl.hidden = true;
+  }
+  await refreshReplayStatus();
+}
+
+initializeReplayPage();
 setInterval(refreshReplayStatus, 1500);
 </script>
 </body>

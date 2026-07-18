@@ -32,6 +32,7 @@ def required_file(path: Path, destination: str) -> tuple[str, str]:
 
 
 STATIC_DIR = ROOT / "app" / "static"
+FONT_DIR = ROOT / "app" / "fonts"
 MIGRATIONS_DIR = ROOT / "migrations"
 STATIC_FILES = (
     "index.html",
@@ -58,9 +59,15 @@ FAVICON_FILES = (
     "favicon-48x48.png",
     "site.webmanifest",
 )
+FONT_FILES = (
+    "OpenDyslexic-Bold.otf",
+    "OFL.txt",
+    "OFL-FAQ.txt",
+)
 
 datas = [
     *(required_file(STATIC_DIR / filename, "app/static") for filename in STATIC_FILES),
+    *(required_file(FONT_DIR / filename, "app/fonts") for filename in FONT_FILES),
     required_file(ROOT / "brand" / "web" / "sightline-tokens.css", "brand/web"),
     *(required_file(ROOT / "brand" / "logos" / "svg" / filename, "brand/logos/svg") for filename in LOGO_FILES),
     *(required_file(ROOT / "brand" / "favicons" / filename, "brand/favicons") for filename in FAVICON_FILES),
@@ -78,10 +85,9 @@ for migration in sorted((MIGRATIONS_DIR / "versions").glob("*.py")):
 
 TESSERACT_DIR = ROOT / "tesseract"
 if not TESSERACT_DIR.is_dir():
-    raise RuntimeError("Required Tesseract runtime is missing; run scripts/prepare_tesseract.ps1 before packaging")
+    raise RuntimeError("Required OCR runtime data is missing; run scripts/prepare_ocr_runtime.py before packaging")
 datas.extend(
     [
-        required_file(TESSERACT_DIR / "tesseract.exe", "tesseract"),
         required_file(TESSERACT_DIR / "tessdata" / "eng.traineddata", "tesseract/tessdata"),
     ]
 )
@@ -92,7 +98,11 @@ datas.extend(required_file(path, "tesseract/licenses") for path in tesseract_lic
 if (BUILD / "licenses").is_dir():
     datas.append((str(BUILD / "licenses"), "licenses"))
 
-hiddenimports = collect_submodules("uvicorn") + ["pystray._win32", "tkinter", "_tkinter"]
+hiddenimports = (
+    collect_submodules("uvicorn")
+    + collect_submodules("tesserocr")
+    + ["pystray._win32", "tkinter", "_tkinter"]
+)
 
 a = Analysis(
     [str(ROOT / "packaging" / "pyinstaller_entry.py")],
@@ -103,7 +113,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=["numpy._core._multiarray_tests", "tesserocr", "pip", "setuptools", "tzdata", "wheel"],
+    excludes=["numpy._core._multiarray_tests", "pip", "pytesseract", "setuptools", "tzdata", "wheel"],
     noarchive=False,
     optimize=1,
 )

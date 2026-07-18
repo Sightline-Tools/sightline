@@ -29,19 +29,29 @@ function Assert-SignatureStatus([string]$Path) {
 Assert-SignatureStatus $InstallerPath
 Invoke-CheckedProcess $InstallerPath @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-", "/NOICONS")
 $Application = Join-Path $InstallDirectory "Sightline.exe"
-$Tesseract = Join-Path $InstallDirectory "_internal\tesseract\tesseract.exe"
+$Tessdata = Join-Path $InstallDirectory "_internal\tesseract\tessdata\eng.traineddata"
+$TesseractDll = Join-Path $InstallDirectory "_internal\tesserocr\tesseract55.dll"
+$TesserocrExtension = Get-ChildItem -LiteralPath (Join-Path $InstallDirectory "_internal\tesserocr") -Filter "tesserocr*.pyd" -File -ErrorAction SilentlyContinue | Select-Object -First 1
 $TclRuntime = Join-Path $InstallDirectory "_internal\_tcl_data\init.tcl"
 $TkRuntime = Join-Path $InstallDirectory "_internal\_tk_data\tk.tcl"
 $ReplayHarness = Join-Path $InstallDirectory "_internal\app\static\replay.html"
+$OpenDyslexicFont = Join-Path $InstallDirectory "_internal\app\fonts\OpenDyslexic-Bold.otf"
+$OpenDyslexicLicense = Join-Path $InstallDirectory "_internal\app\fonts\OFL.txt"
+$OpenDyslexicFaq = Join-Path $InstallDirectory "_internal\app\fonts\OFL-FAQ.txt"
 $Uninstaller = (Get-ChildItem -LiteralPath $InstallDirectory -Filter "unins*.exe" -File | Select-Object -First 1).FullName
 Assert-SignatureStatus $Application
-Assert-SignatureStatus $Tesseract
 Assert-SignatureStatus $Uninstaller
+if (-not (Test-Path -LiteralPath $Tessdata) -or -not (Test-Path -LiteralPath $TesseractDll) -or $null -eq $TesserocrExtension) {
+    throw "Installer omitted the in-process tesserocr backend or English OCR model"
+}
 if (-not (Test-Path -LiteralPath $TclRuntime) -or -not (Test-Path -LiteralPath $TkRuntime)) {
     throw "Installer omitted the Tcl/Tk runtime required by region selection and overlays"
 }
 if (-not (Test-Path -LiteralPath $ReplayHarness)) {
     throw "Installer omitted the user-toggleable replay harness"
+}
+if (-not (Test-Path -LiteralPath $OpenDyslexicFont) -or -not (Test-Path -LiteralPath $OpenDyslexicLicense) -or -not (Test-Path -LiteralPath $OpenDyslexicFaq)) {
+    throw "Installer omitted the OpenDyslexic font or its license files"
 }
 $ForbiddenBundlePaths = @(
     "_internal\replay",
@@ -51,6 +61,8 @@ $ForbiddenBundlePaths = @(
     "_internal\tesseract_test.py",
     "_internal\tesseract_color_test.py",
     "_internal\tesseract_composite_test.py",
+    "_internal\tesseract\tesseract.exe",
+    "_internal\pytesseract",
     "_internal\brand\web\brand-preview.html",
     "_internal\brand\web\sightline-theme.css",
     "_internal\migrations\script.py.mako"

@@ -40,7 +40,7 @@ python -m pip install pytest==8.4.2
 python -m pytest -q
 ```
 
-Source checkouts may use a system Tesseract installation for development. Signed builds instead bundle the verified Tesseract 5.5.2 x64 runtime and a pinned `tessdata_fast` English model, and never consult system `PATH`.
+Packaged builds use a hash-verified `tesserocr` Windows extension linked to Tesseract 5.5.2 and keep one `PyTessBaseAPI` instance alive across OCR passes. This removes per-pass process startup and temporary-file work, and gives the packaged application a simpler, stable runtime shape. Packaged OCR fails closed if that in-process backend cannot initialize. Source checkouts retain `pytesseract` and a system or repository-local Tesseract CLI as a development fallback.
 
 Run the production-style launcher:
 
@@ -85,8 +85,9 @@ The tag-driven Windows workflow in `.github/workflows/release.yml` is the author
 
 - accepts only a Gatekeeper-authorized tag after the matching public snapshot has passed the complete test suite;
 - installs the locked runtime and pinned build dependencies on a clean GitHub-hosted runner;
+- downloads the CPython 3.12 `tesserocr`/Tesseract 5.5.2 wheel, verifies its pinned SHA-256 digest, and smoke-tests the in-process backend;
 - generates a nine-layer Windows icon from `brand/favicons/android-chrome-512x512.png`, a raster rendering of the canonical `brand/favicons/favicon.svg` artwork;
-- builds Tesseract 5.5.2 from its pinned official source commit and checks out a pinned official English model;
+- audits the wheel's exact native DLL inventory and downloads the pinned English model and native-component license texts with verified SHA-256 digests;
 - produces a PyInstaller one-folder application and per-user Inno Setup installer;
 - explicitly verifies that the application, uninstaller, and installer are unsigned;
 - verifies install, OCR, authentication, second launch, port fallback, shutdown, upgrade, and both uninstall paths;

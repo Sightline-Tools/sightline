@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import ctypes
 from ctypes import wintypes
+from importlib.util import find_spec
 import json
 import logging
 from logging.handlers import RotatingFileHandler
@@ -270,7 +271,7 @@ def _open_data_folder() -> None:
 
 def _smoke_test() -> int:
     from .db import init_db
-    from .tesseract_backend import BUNDLED_TESSERACT
+    from .tesseract_backend import get_backend_stats, image_to_data
 
     init_db()
     required = [
@@ -278,9 +279,13 @@ def _smoke_test() -> int:
         resource_path("brand", "favicons", "favicon.svg"),
         resource_path("brand", "favicons", "favicon.ico"),
     ]
+    if IS_FROZEN:
+        required.append(resource_path("tesseract", "tessdata", "eng.traineddata"))
     missing = [str(path) for path in required if not path.is_file()]
-    if IS_FROZEN and BUNDLED_TESSERACT is None:
-        missing.append(str(resource_path("tesseract", "tesseract.exe")))
+    if IS_FROZEN and find_spec("pytesseract") is not None:
+        missing.append("development-only pytesseract module is present in the packaged runtime")
+    if IS_FROZEN and resource_path("tesseract", "tesseract.exe").exists():
+        missing.append("development-only Tesseract CLI executable is present in the packaged runtime")
     if IS_FROZEN:
         try:
             import tkinter
@@ -301,19 +306,29 @@ def _smoke_test() -> int:
                 tk_root.destroy()
         except Exception as exc:
             missing.append(f"bundled Tk runtime: {exc}")
-    if IS_FROZEN and BUNDLED_TESSERACT is not None:
+    if IS_FROZEN:
         try:
             from PIL import Image, ImageDraw, ImageFont
-            import pytesseract
 
             image = Image.new("RGB", (600, 100), "white")
             font = ImageFont.truetype("arial.ttf", 44)
             ImageDraw.Draw(image).text((16, 18), "SIGHTLINE OCR TEST", fill="black", font=font)
-            if "SIGHTLINE" not in pytesseract.image_to_string(image, config="--psm 7").upper():
-                missing.append("bundled Tesseract OCR recognition self-test")
+            ocr_data = image_to_data(image, config="--psm 7")
+            recognized = " ".join(str(text) for text in ocr_data.get("text", [])).upper()
+            if "SIGHTLINE" not in recognized:
+                missing.append("bundled in-process OCR recognition self-test")
+            if get_backend_stats().get("last_backend") != "tesserocr":
+                missing.append("packaged OCR did not use the in-process backend")
         except Exception as exc:
-            missing.append(f"bundled Tesseract OCR self-test: {exc}")
-    print(json.dumps({"ok": not missing, "version": APP_VERSION, "commit": BUILD_COMMIT, "missing": missing}))
+            missing.append(f"bundled in-process OCR self-test: {exc}")
+    result = {"ok": not missing, "version": APP_VERSION, "commit": BUILD_COMMIT, "missing": missing}
+    log = logging.getLogger(__name__)
+    if missing:
+        log.error("Packaged smoke test failed: %s", json.dumps(result))
+    else:
+        log.info("Packaged smoke test passed: %s", json.dumps(result))
+    if sys.stdout is not None:
+        print(json.dumps(result))
     return 0 if not missing else 1
 
 

@@ -46,6 +46,7 @@
     <div class="row"><label for="overlay_damage_out_offset_x">Damage-out X offset</label><input id="overlay_damage_out_offset_x" type="number" step="1" /></div>
     <div class="row"><label for="overlay_damage_in_offset_x">Damage-in X offset</label><input id="overlay_damage_in_offset_x" type="number" step="1" /></div>
     <div class="row"><label for="overlay_heal_in_offset_y">Heal Y offset</label><input id="overlay_heal_in_offset_y" type="number" step="1" /></div>
+    <div class="row"><label for="overlay_font_family">Font</label><select id="overlay_font_family"><option value="OpenDyslexic">OpenDyslexic</option><option value="Segoe UI">Segoe UI</option></select></div>
     <div class="row"><label for="overlay_font_size">Font size</label><input id="overlay_font_size" type="number" step="1" min="1" /></div>
     <div class="row"><label for="overlay_time_to_fade_s">Time-to-fade (s)</label><input id="overlay_time_to_fade_s" type="number" step="0.1" min="0.1" /></div>
     <div class="row"><label for="overlay_event_spacing">Spacing between new events</label><input id="overlay_event_spacing" type="number" step="1" min="1" /></div>
@@ -77,6 +78,7 @@
         .forEach((key) => {
           document.getElementById(key).value = settings[key];
         });
+      document.getElementById('overlay_font_family').value = settings.overlay_font_family;
       document.getElementById('overlay_combine_multi_hit').checked = settings.overlay_combine_multi_hit;
     }
 
@@ -100,6 +102,7 @@
           current[key] = Number(document.getElementById(key).value);
         });
       current.overlay_font_size = readValidatedNumber('overlay_font_size', 1);
+      current.overlay_font_family = document.getElementById('overlay_font_family').value;
       current.overlay_time_to_fade_s = readValidatedNumber('overlay_time_to_fade_s', 0.1);
       current.overlay_event_spacing = readValidatedNumber('overlay_event_spacing', 1);
       current.overlay_combine_multi_hit = document.getElementById('overlay_combine_multi_hit').checked;
