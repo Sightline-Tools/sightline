@@ -1,0 +1,32 @@
+:root {
+  --sl-ink: #0F1117;
+  --sl-surface: #151923;
+  --sl-surface-raised: #1D2330;
+  --sl-surface-soft: #252C3B;
+  --sl-primary: #2563FF;
+  --sl-primary-hover: #3B73FF;
+  --sl-accent: #7B5CFF;
+  --sl-text: #F8FAFC;
+  --sl-text-muted: #A7B0C0;
+  --sl-border: rgba(255, 255, 255, 0.11);
+  --sl-success: #2DD4BF;
+  --sl-warning: #FBBF24;
+  --sl-danger: #FB7185;
+  --sl-gradient-sightline: linear-gradient(110deg, #2563FF 0%, #7B5CFF 100%);
+  --sl-gradient-surface: linear-gradient(145deg, #1D2330 0%, #11141B 100%);
+  --sl-font-display: "Inter Display", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --sl-font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --sl-font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --sl-radius-sm: 8px;
+  --sl-radius-md: 14px;
+  --sl-radius-lg: 22px;
+  --sl-shadow-card: 0 18px 50px rgba(0, 0, 0, 0.28);
+  --sl-focus-ring: 0 0 0 3px rgba(37, 99, 255, 0.35);
+  --sl-space-1: 4px;
+  --sl-space-2: 8px;
+  --sl-space-3: 12px;
+  --sl-space-4: 16px;
+  --sl-space-5: 24px;
+  --sl-space-6: 32px;
+  --sl-space-7: 48px;
+}

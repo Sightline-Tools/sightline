@@ -1,0 +1,63 @@
+{
+  "runtime": {
+    "alembic": "MIT",
+    "annotated-types": "MIT",
+    "anyio": "MIT",
+    "click": "BSD-3-Clause",
+    "colorama": "BSD-3-Clause",
+    "fastapi": "MIT",
+    "greenlet": "MIT",
+    "h11": "MIT",
+    "httptools": "MIT",
+    "idna": "BSD-3-Clause",
+    "jinja2": "BSD-3-Clause",
+    "mako": "MIT",
+    "markupsafe": "BSD-3-Clause",
+    "mss": "MIT",
+    "numpy": "BSD-3-Clause",
+    "opencv-python": "Apache-2.0",
+    "packaging": "Apache-2.0 OR BSD-2-Clause",
+    "pillow": "HPND",
+    "pydantic": "MIT",
+    "pydantic-core": "MIT",
+    "pystray": "LGPL-3.0-only",
+    "pytesseract": "Apache-2.0",
+    "python-dotenv": "BSD-3-Clause",
+    "python-multipart": "Apache-2.0",
+    "pyyaml": "MIT",
+    "rapidfuzz": "MIT",
+    "six": "MIT",
+    "sqlalchemy": "MIT",
+    "starlette": "BSD-3-Clause",
+    "typing-extensions": "PSF-2.0",
+    "typing-inspection": "MIT",
+    "uvicorn": "BSD-3-Clause",
+    "watchfiles": "MIT",
+    "websockets": "BSD-3-Clause"
+  },
+  "bundled": {
+    "CPython Windows runtime": "PSF-2.0 AND LicenseRef-Microsoft-Python-Distributable-Code",
+    "PyInstaller bootloader": "GPL-2.0-or-later WITH Bootloader-exception",
+    "Tcl/Tk runtime": "TCL"
+  },
+  "native": {
+    "Tesseract OCR 5.5.2": "Apache-2.0",
+    "tessdata_fast English model": "Apache-2.0",
+    "Leptonica": "BSD-2-Clause"
+  },
+  "native_packages": {
+    "bzip2": "bzip2-1.0.6",
+    "giflib": "MIT",
+    "leptonica": "BSD-2-Clause",
+    "lerc": "Apache-2.0",
+    "libdeflate": "MIT",
+    "libjpeg-turbo": "BSD-3-Clause AND IJG AND Zlib",
+    "liblzma": "0BSD",
+    "libpng": "Libpng-2.0",
+    "libwebp": "BSD-3-Clause",
+    "openjpeg": "BSD-2-Clause",
+    "tiff": "libtiff",
+    "zlib": "Zlib",
+    "zstd": "BSD-3-Clause"
+  }
+}

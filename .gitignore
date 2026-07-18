@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+data/
+.ocr-debug
+.worktrees/
+/build/
+/dist/
+/tesseract/
+/build-info.json

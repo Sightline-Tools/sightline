@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sightline-combat-parser"
+version = "0.1.0"
+description = "Sightline — local-first combat parser"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-only"
+authors = [{ name = "Sightline contributors" }]
+dependencies = [
+  "alembic==1.18.5",
+  "fastapi==0.116.1",
+  "jinja2==3.1.6",
+  "sqlalchemy==2.0.43",
+  "pydantic==2.11.7",
+  "python-multipart==0.0.20",
+  "rapidfuzz==3.13.0",
+  "mss==10.1.0",
+  "pillow==11.3.0",
+  "opencv-python==4.12.0.88",
+  "pytesseract==0.3.13",
+  "pystray==0.19.5",
+  "uvicorn[standard]==0.35.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Sightline-Tools/sightline"
+Source = "https://github.com/Sightline-Tools/sightline"
+Issues = "https://github.com/Sightline-Tools/sightline/issues"
+
+[project.scripts]
+sightline-dev = "app.dev:main"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
