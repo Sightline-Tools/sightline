@@ -45,7 +45,7 @@ $VcpkgExecutable = Join-Path $VcpkgSource "vcpkg.exe"
 cmake -S $TesseractSource -B (Join-Path $WorkDirectory "build") -A x64 `
     -DCMAKE_TOOLCHAIN_FILE="$VcpkgSource\scripts\buildsystems\vcpkg.cmake" `
     -DVCPKG_TARGET_TRIPLET=x64-windows-static `
-    -DCMAKE_INSTALL_PREFIX=$InstallDirectory `
+    -DCMAKE_INSTALL_PREFIX="$InstallDirectory" `
     -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
     -DBUILD_TRAINING_TOOLS=OFF `
     -DBUILD_TESTS=OFF `
