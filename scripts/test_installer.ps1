@@ -4,7 +4,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$InstallerPath = [System.IO.Path]::GetFullPath((Join-Path $PWD $InstallerPath))
+if (-not [System.IO.Path]::IsPathRooted($InstallerPath)) {
+    $InstallerPath = Join-Path $PWD $InstallerPath
+}
+$InstallerPath = [System.IO.Path]::GetFullPath($InstallerPath)
 $InstallDirectory = Join-Path $env:LOCALAPPDATA "Programs\Sightline"
 $DataDirectory = Join-Path $env:LOCALAPPDATA "Sightline"
 $RuntimeState = Join-Path $DataDirectory "runtime.json"
