@@ -1,0 +1,282 @@
+{
+  "session": {
+    "id": 9001,
+    "started_at": "2026-04-24T12:00:00",
+    "ended_at": "2026-04-24T12:10:00",
+    "file_path": "demo://sample-combat-log",
+    "known_actors": [
+      "Mhara",
+      "Ruby",
+      "Travo"
+    ]
+  },
+  "loose_lines": [
+    {
+      "offset_s": 0,
+      "raw_text": "Welcome to Sightline demo mode.",
+      "ocr_confidence": 0.99
+    },
+    {
+      "offset_s": 1,
+      "raw_text": "Y0u s1ash an eldven skelton for ?? points of damage.",
+      "ocr_confidence": 0.31
+    },
+    {
+      "offset_s": 2,
+      "raw_text": "The OCR pass saw only a smear of red text here.",
+      "ocr_confidence": 0.28
+    }
+  ],
+  "encounters": [
+    {
+      "id": 101,
+      "label": "Ash Sentry Ambush",
+      "started_at": "2026-04-24T12:01:00",
+      "ended_at": "2026-04-24T12:02:05",
+      "ended_reason": "timeout",
+      "lines": [
+        {
+          "offset_s": 0,
+          "raw_text": "Starting to attack."
+        },
+        {
+          "offset_s": 1,
+          "raw_text": "You slash an ash sentry for 18 points of damage."
+        },
+        {
+          "offset_s": 3,
+          "raw_text": "an ash sentry hits YOU for 9 points of damage."
+        },
+        {
+          "offset_s": 5,
+          "raw_text": "Ruby's Strike hits an ash sentry for 16 points of damage."
+        },
+        {
+          "offset_s": 7,
+          "raw_text": "You try to slash an ash sentry, but an ash sentry parries!"
+        },
+        {
+          "offset_s": 9,
+          "raw_text": "Your Rend hits an ash sentry for 32 points of damage."
+        },
+        {
+          "offset_s": 9,
+          "raw_text": "Travo pierces an ash sentry with their bow for 26 points of damage."
+        },
+        {
+          "offset_s": 12,
+          "raw_text": "an ash sentry crushes YOU for 11 points of damage (1 absorbed). (Block 4)"
+        },
+        {
+          "offset_s": 15,
+          "raw_text": "Mhara's Lesser Heal heals you for 12 Health."
+        },
+        {
+          "offset_s": 18,
+          "raw_text": "Your Damage Shield hits an ash sentry for 5 points of damage."
+        },
+        {
+          "offset_s": 20,
+          "raw_text": "an ash sentry tries to hit YOU, but misses!"
+        },
+        {
+          "offset_s": 23,
+          "raw_text": "You have slain an ash sentry."
+        },
+        {
+          "offset_s": 25,
+          "raw_text": "Ash sentty collapses into the static.",
+          "ocr_confidence": 0.35
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "label": "Bone Sentinel",
+      "started_at": "2026-04-24T12:03:00",
+      "ended_at": "2026-04-24T12:04:30",
+      "ended_reason": "manual",
+      "lines": [
+        {
+          "offset_s": 0,
+          "raw_text": "Mhara begins casting Burning Embers."
+        },
+        {
+          "offset_s": 2,
+          "raw_text": "Ruby slashes a bone sentinel for 12 points of damage."
+        },
+        {
+          "offset_s": 4,
+          "raw_text": "You slash a bone sentinel for 8 points of damage."
+        },
+        {
+          "offset_s": 6,
+          "raw_text": "a bone sentinel hits Mhara for 5 points of damage."
+        },
+        {
+          "offset_s": 8,
+          "raw_text": "a bone sentinel hits YOU for 18 points of damage."
+        },
+        {
+          "offset_s": 10,
+          "raw_text": "Mhara's Burning Embers hits a bone sentinel for 1 point of Fire Damage."
+        },
+        {
+          "offset_s": 12,
+          "raw_text": "Ruby's Strike hits a bone sentinel for 14 points of damage."
+        },
+        {
+          "offset_s": 14,
+          "raw_text": "Your Rend hits a bone sentinel for 17 points of damage."
+        },
+        {
+          "offset_s": 16,
+          "raw_text": "You try to slash a bone sentinel, but miss!"
+        },
+        {
+          "offset_s": 18,
+          "raw_text": "a bone sentinel tries to hit YOU, but YOU dodge!"
+        },
+        {
+          "offset_s": 20,
+          "raw_text": "Mhara's Lesser Heal heals you for 9 Health."
+        },
+        {
+          "offset_s": 22,
+          "raw_text": "a bone sentinel's armor breaks."
+        },
+        {
+          "offset_s": 24,
+          "raw_text": "a bone sentinel is rooted to the ground."
+        },
+        {
+          "offset_s": 26,
+          "raw_text": "Travo pierces a bone sentinel with their bow for 21 points of damage."
+        },
+        {
+          "offset_s": 28,
+          "raw_text": "You have slain a bone sentinel."
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "label": "Desert Warband",
+      "started_at": "2026-04-24T12:06:00",
+      "ended_at": "2026-04-24T12:07:35",
+      "ended_reason": "timeout",
+      "lines": [
+        {
+          "offset_s": 0,
+          "raw_text": "Travo pierces a desert raider with their bow for 26 points of damage."
+        },
+        {
+          "offset_s": 2,
+          "raw_text": "a desert raider's Strike hits Ruby for 5 points of damage."
+        },
+        {
+          "offset_s": 4,
+          "raw_text": "a desert archer hits YOU for 13 points of damage."
+        },
+        {
+          "offset_s": 6,
+          "raw_text": "a desert warlord hits YOU for 24 points of damage."
+        },
+        {
+          "offset_s": 8,
+          "raw_text": "a desert raider tries to slash YOU, but missesl"
+        },
+        {
+          "offset_s": 10,
+          "raw_text": "Mhara heals Ruby for 12 Health."
+        },
+        {
+          "offset_s": 12,
+          "raw_text": "a desert medic's Renewing Light heals a desert warlord for 30 Health."
+        },
+        {
+          "offset_s": 14,
+          "raw_text": "Your Bind Wound heals you for 9 Health."
+        },
+        {
+          "offset_s": 16,
+          "raw_text": "Your Rend hits a desert raider for 29 points of damage."
+        },
+        {
+          "offset_s": 18,
+          "raw_text": "You strike a desert raider for 7 points of damage."
+        },
+        {
+          "offset_s": 20,
+          "raw_text": "a desert raider hits YOU for 21 points of damage (2 absorbed)."
+        },
+        {
+          "offset_s": 22,
+          "raw_text": "Travo's Trueshot hits a desert archer for 41 points of damage."
+        },
+        {
+          "offset_s": 24,
+          "raw_text": "a desert archer tries to pierce Travo, but Travo parries!"
+        },
+        {
+          "offset_s": 26,
+          "raw_text": "You have slain a desert raider."
+        },
+        {
+          "offset_s": 28,
+          "raw_text": "a desert arch3r hits Y0U for lots.",
+          "ocr_confidence": 0.34
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "label": "Cave Stalker Pack",
+      "started_at": "2026-04-24T12:08:00",
+      "ended_at": "2026-04-24T12:09:10",
+      "ended_reason": "timeout",
+      "lines": [
+        {
+          "offset_s": 0,
+          "raw_text": "a cave stalker bites YOU for 12 points of damage."
+        },
+        {
+          "offset_s": 2,
+          "raw_text": "You bash a cave stalker for 10 points of damage."
+        },
+        {
+          "offset_s": 4,
+          "raw_text": "a stone brute crushes YOU for 14 points of damage."
+        },
+        {
+          "offset_s": 6,
+          "raw_text": "Ruby slashes a stone brute for 11 points of damage."
+        },
+        {
+          "offset_s": 8,
+          "raw_text": "a cave stalker tries to bite YOU, but misses!"
+        },
+        {
+          "offset_s": 10,
+          "raw_text": "Mhara's Lesser Heal heals YOU for 14 Health."
+        },
+        {
+          "offset_s": 12,
+          "raw_text": "a stone brute is rooted to the ground."
+        },
+        {
+          "offset_s": 14,
+          "raw_text": "Travo pierces a cave stalker with their bow for 22 points of damage."
+        },
+        {
+          "offset_s": 16,
+          "raw_text": "Your Damage Shield hits a cave stalker for 6 points of damage."
+        },
+        {
+          "offset_s": 18,
+          "raw_text": "You have slain a cave stalker."
+        }
+      ]
+    }
+  ]
+}

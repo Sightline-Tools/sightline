@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Sightline turns visible gameplay into clear, actionable combat analytics." />
+  <meta name="theme-color" content="#0F1117" />
+  <meta property="og:title" content="Sightline — Live Combat Log" />
+  <meta property="og:description" content="Gameplay, brought into focus." />
+  <meta property="og:type" content="website" />
+  <title>Live Combat Log — Sightline</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicons/favicon-16x16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-48x48.png" sizes="48x48" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <script defer src="/static/sightline-shell.js"></script>
+  <link rel="stylesheet" href="/brand/web/sightline-tokens.css" />
+  <style>
+    :root {
+      --base: #24273a;
+      --mantle: #1e2030;
+      --crust: #181926;
+      --text: #cad3f5;
+      --subtext1: #b8c0e0;
+      --subtext0: #a5adcb;
+      --surface0: #363a4f;
+      --surface1: #494d64;
+      --surface2: #5b6078;
+      --blue: #8aadf4;
+      --green: #a6da95;
+      --teal: #8bd5ca;
+      --maroon: #f0c6c6;
+      --red: #ed8796;
+      --peach: #f5a97f;
+      --overlay0: #6e738d;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Arial, sans-serif; background: var(--base); color: var(--text); }
+    .topbar { padding: 10px 12px; min-height: 56px; background: var(--crust); color: var(--text); display:flex; gap:14px; align-items:center; border-bottom: 1px solid var(--surface0); }
+    .topbar-controls { display:flex; gap:8px; min-width: 150px; }
+    .topbar-nav { display:flex; gap:14px; align-items:center; }
+    .topbar-link { color: var(--blue); text-decoration:none; font-weight: 600; }
+    .topbar-link:hover { color: var(--teal); }
+    .topbar-current { color: var(--text); font-weight: 600; }
+    .status { margin-left: auto; }
+    button, input {
+      background: var(--surface0);
+      color: var(--text);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+    }
+    button { padding: 6px 10px; cursor: pointer; }
+    button:hover { background: var(--surface1); }
+    input[type="text"], input[type="number"] { padding: 5px 8px; }
+    input[type="checkbox"] { accent-color: var(--blue); }
+    .main { padding: 12px; height: calc(100vh - 58px); overflow: auto; }
+    .controls { display:flex; gap:12px; align-items:center; margin-bottom: 10px; }
+    .status { font-size: 12px; color: var(--subtext0); }
+    .log-line { font-family: monospace; font-size: 12px; border-bottom: 1px solid var(--surface0); padding: 6px; display:flex; gap:8px; cursor: pointer; border-radius: 6px; }
+    .log-line.selected { background: rgba(138, 173, 244, 0.14); box-shadow: inset 0 0 0 1px var(--blue); }
+    .log-line.rejected .log-text-main { color: var(--red); }
+    .log-meta { color: var(--subtext0); user-select: none; }
+    .log-text { display: flex; flex-direction: column; gap: 2px; }
+    .log-normalized { color: var(--overlay0); }
+    .actor-tag-npc { color: var(--maroon); font-weight: 600; }
+    .actor-tag-you { color: var(--green); font-weight: 600; }
+    .actor-tag-player { color: var(--teal); font-weight: 600; }
+    #selectionInfo { color: var(--subtext1); }
+  </style>
+  <link rel="stylesheet" href="/static/sightline.css" />
+</head>
+<body>
+<div class="topbar">
+  <a class="brand-link" href="/" aria-label="Sightline home"><img class="brand-logo" src="/brand/logos/svg/sightline-logo-dark.svg" alt="Sightline" width="360" height="96" /></a>
+  <div class="topbar-controls">
+    <button onclick="startParser()">Start</button>
+    <button onclick="stopParser()">Stop</button>
+  </div>
+  <div class="topbar-nav">
+    <span class="topbar-current" aria-current="page">Live Log</span>
+    <a href="/encounters" class="topbar-link">Encounters</a>
+    <a href="/settings" class="topbar-link">Settings</a>
+    <a href="/replay" class="topbar-link" data-debug-only hidden style="display:none" aria-hidden="true">Replay Harness</a>
+  </div>
+  <span class="status" id="status" role="status" aria-live="polite"></span>
+</div>
+<div class="main">
+  <header class="page-heading">
+    <div><p class="page-heading__eyebrow">Capture signal</p><h1>Live combat log</h1><p>Inspect recognized combat lines and parser context as Sightline reads the visible game feed.</p></div>
+  </header>
+  <div class="controls">
+    <label><input id="showMetadata" type="checkbox" onchange="renderLog()"/> Show categorization metadata</label>
+    <label><input id="showNormalizedText" type="checkbox" onchange="renderLog()"/> Show normalized text</label>
+    <label>Search lines <input id="lineSearch" type="text" placeholder="e.g. an old elven skeleton" oninput="renderLog()"/></label>
+    <button onclick="exportCurrentLog()">Export Current Session (.txt)</button>
+    <span id="selectionInfo"></span>
+  </div>
+  <div id="logLines"></div>
+</div>
+<script>
+let currentSession = null;
+let currentLines = [];
+let selectedLineIds = new Set();
+let lastSelectedIndex = null;
+let lastSelectedLineId = null;
+
+const HTML_ESCAPE_LOOKUP = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, (char) => HTML_ESCAPE_LOOKUP[char]);
+}
+
+function escapeRegExp(value){
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function addWordMatches(matchRanges, text, value, cssClass){
+  if(!value) return;
+  const pattern = new RegExp(`\\b${escapeRegExp(value)}\\b`, 'gi');
+  let match = pattern.exec(text);
+  while(match){
+    matchRanges.push({
+      start: match.index,
+      end: match.index + match[0].length,
+      cssClass,
+    });
+    match = pattern.exec(text);
+  }
+}
+
+function isNpcActorName(actorName){
+  const normalized = String(actorName || '').trim().toLowerCase();
+  if(!normalized || normalized === 'you' || normalized === 'your') return false;
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  if(!tokens.length) return false;
+  if(['a', 'an', 'the'].includes(tokens[0])) return true;
+  return tokens.length > 1;
+}
+
+function cssClassForActor(actorName, actorType){
+  if(!actorName) return null;
+  if(String(actorName).trim().toLowerCase() === 'you') return 'actor-tag-you';
+  if(actorType === 'npc') return 'actor-tag-npc';
+  if(actorType === 'player') return 'actor-tag-player';
+  return isNpcActorName(actorName) ? 'actor-tag-npc' : 'actor-tag-player';
+}
+
+function chooseRange(range){
+  if(range.cssClass === 'actor-tag-you') return 3;
+  if(range.cssClass === 'actor-tag-player') return 2;
+  return 1;
+}
+
+function renderHighlightedCombatText(line, options = {}){
+  const rawText = String(line.raw_text || '');
+  if(!rawText) return '';
+  if(options.skipHighlighting) return escapeHtml(rawText);
+  const ranges = [];
+  const sourceClass = cssClassForActor(line.source_actor, line.source_type);
+  const targetClass = cssClassForActor(line.target_actor, line.target_type);
+  if(sourceClass) addWordMatches(ranges, rawText, line.source_actor, sourceClass);
+  if(targetClass) addWordMatches(ranges, rawText, line.target_actor, targetClass);
+  addWordMatches(ranges, rawText, 'you', 'actor-tag-you');
+  addWordMatches(ranges, rawText, 'your', 'actor-tag-you');
+
+  if(!ranges.length) return escapeHtml(rawText);
+  ranges.sort((a, b) => (a.start - b.start) || (b.end - a.end));
+  const filtered = [];
+  for(const range of ranges){
+    const previous = filtered[filtered.length - 1];
+    if(previous && range.start < previous.end){
+      if(chooseRange(range) > chooseRange(previous)){
+        filtered[filtered.length - 1] = range;
+      }
+      continue;
+    }
+    filtered.push(range);
+  }
+
+  let cursor = 0;
+  let html = '';
+  for(const range of filtered){
+    if(range.start > cursor) html += escapeHtml(rawText.slice(cursor, range.start));
+    const matched = rawText.slice(range.start, range.end);
+    html += `<span class="${range.cssClass}">${escapeHtml(matched)}</span>`;
+    cursor = range.end;
+  }
+  if(cursor < rawText.length) html += escapeHtml(rawText.slice(cursor));
+  return html;
+}
+
+async function api(path, method='GET', body=null){
+  const res = await fetch(path, {method, headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : null});
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function refreshStatus(){
+  const s = await api('/api/status');
+  const running = s.running ? 'running' : 'stopped';
+  const skip = s.last_skip_reason ? ` | Skip: ${s.last_skip_reason}` : '';
+  const error = s.last_error ? ` | Error: ${s.last_error}` : '';
+  document.getElementById('status').textContent = `Parser: ${running} | OCR last ok: ${s.last_successful_ocr_at || 'n/a'}${skip}${error} | Region: (${s.settings.capture_x},${s.settings.capture_y},${s.settings.capture_width},${s.settings.capture_height})`;
+}
+
+async function ensureCombatRegionConfigured(){
+  const s = await api('/api/settings');
+  if(!s.combat_region_configured){
+    window.location.href = '/settings';
+    return false;
+  }
+  return true;
+}
+
+function handleRowClick(event, index, lineId){
+  const isShift = event.shiftKey;
+  const isToggle = event.metaKey || event.ctrlKey;
+
+  if(isShift && lastSelectedIndex !== null){
+    const [startIndex, endIndex] = [Math.min(lastSelectedIndex, index), Math.max(lastSelectedIndex, index)];
+    selectedLineIds.clear();
+    for(let i = startIndex; i <= endIndex; i += 1){
+      const row = currentLines[i];
+      if(row) selectedLineIds.add(row.id);
+    }
+  } else if(isToggle){
+    if(selectedLineIds.has(lineId)) selectedLineIds.delete(lineId);
+    else selectedLineIds.add(lineId);
+    lastSelectedIndex = index;
+    lastSelectedLineId = lineId;
+  } else {
+    selectedLineIds = new Set([lineId]);
+    lastSelectedIndex = index;
+    lastSelectedLineId = lineId;
+  }
+
+  if(isShift && lastSelectedIndex === null){
+    lastSelectedIndex = index;
+    lastSelectedLineId = lineId;
+  }
+
+  renderLog();
+}
+
+function renderLog(){
+  const showMetadata = document.getElementById('showMetadata').checked;
+  const showNormalizedText = document.getElementById('showNormalizedText').checked;
+  const lineSearch = document.getElementById('lineSearch').value.trim().toLowerCase();
+  const wrap = document.getElementById('logLines');
+  if(!currentSession){
+    wrap.innerHTML = '<div>No parser sessions yet. Start parser capture to stream lines.</div>';
+    document.getElementById('selectionInfo').textContent = `${selectedLineIds.size} line(s) selected`;
+    return;
+  }
+  if(!currentLines.length){
+    wrap.innerHTML = '<div>Session is active but no OCR lines have been captured yet.</div>';
+    document.getElementById('selectionInfo').textContent = `${selectedLineIds.size} line(s) selected`;
+    return;
+  }
+
+  const indexedLines = currentLines.map((line, index) => ({ line, index }));
+  const visibleLines = lineSearch
+    ? indexedLines.filter(({ line }) => {
+      const raw = String(line.raw_text || '').toLowerCase();
+      const normalized = String(line.normalized_text || '').toLowerCase();
+      return raw.includes(lineSearch) || normalized.includes(lineSearch);
+    })
+    : indexedLines;
+
+  if(!visibleLines.length){
+    wrap.innerHTML = '<div>No lines match the current search.</div>';
+    document.getElementById('selectionInfo').textContent = `${selectedLineIds.size} line(s) selected`;
+    return;
+  }
+
+  wrap.innerHTML = visibleLines.map(({ line, index }) => {
+    const lineId = line.id;
+    const isSelected = selectedLineIds.has(lineId);
+    const timestamp = line.timestamp || '';
+    const isRejected = line.parse_outcome === 'rejected';
+    const meta = showMetadata
+      ? `<span class="log-meta">[${escapeHtml(timestamp)}] outcome=${escapeHtml(line.parse_outcome || 'n/a')} category=${escapeHtml(line.parse_category || 'n/a')} source=${escapeHtml(line.source_actor || 'n/a')} target=${escapeHtml(line.target_actor || 'n/a')} ability=${escapeHtml(line.ability_name || 'n/a')} amount=${escapeHtml(line.amount ?? 'n/a')} result=${escapeHtml(line.result || 'n/a')}</span>`
+      : `<span class="log-meta">[${escapeHtml(timestamp)}]</span>`;
+    const normalized = showNormalizedText
+      ? `<span class="log-normalized">norm: ${escapeHtml(line.normalized_text || '')}</span>`
+      : '';
+    return `<div class="log-line ${isSelected ? 'selected' : ''} ${isRejected ? 'rejected' : ''}" data-index="${index}" onclick="handleRowClick(event, ${index}, ${lineId})">
+      ${meta}
+      <span class="log-text">
+        <span class="log-text-main">${renderHighlightedCombatText(line, { skipHighlighting: isRejected })}</span>
+        ${normalized}
+      </span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('selectionInfo').textContent = `${selectedLineIds.size} line(s) selected`;
+}
+
+async function loadCurrentSession(){
+  const payload = await api('/api/parser/sessions/current');
+  const previousSessionId = currentSession?.id ?? null;
+  currentSession = payload.session;
+  currentLines = (payload.log_lines || []).slice().reverse();
+  const valid = new Set(currentLines.map(l => l.id));
+  selectedLineIds = new Set([...selectedLineIds].filter(id => valid.has(id)));
+  const currentSessionId = currentSession?.id ?? null;
+  const sessionChanged = previousSessionId !== currentSessionId;
+  if(sessionChanged || selectedLineIds.size === 0){
+    lastSelectedIndex = null;
+    lastSelectedLineId = null;
+  } else if(lastSelectedLineId !== null){
+    const recomputedIndex = currentLines.findIndex(line => line.id === lastSelectedLineId);
+    lastSelectedIndex = recomputedIndex >= 0 ? recomputedIndex : null;
+    if(lastSelectedIndex === null){
+      lastSelectedLineId = null;
+    }
+  } else {
+    lastSelectedIndex = null;
+  }
+  renderLog();
+}
+
+async function startParser(){ await api('/api/parser/start', 'POST'); await refreshAll(); }
+async function stopParser(){ await api('/api/parser/stop', 'POST'); await refreshAll(); }
+function exportCurrentLog(){ window.open('/api/parser/sessions/current/export', '_blank'); }
+
+async function refreshAll(){
+  await Promise.all([refreshStatus(), loadCurrentSession()]);
+}
+
+async function initialize(){
+  const configured = await ensureCombatRegionConfigured();
+  if(!configured) return;
+  await refreshAll();
+  setInterval(refreshAll, 1500);
+}
+
+initialize();
+</script>
+</body>
+</html>

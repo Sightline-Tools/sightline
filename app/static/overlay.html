@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Position and control the Sightline floating combat overlay." />
+  <meta name="theme-color" content="#0F1117" />
+  <meta property="og:title" content="Sightline — Overlay Controls" />
+  <meta property="og:description" content="Gameplay, brought into focus." />
+  <meta property="og:type" content="website" />
+  <title>Overlay Controls — Sightline</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicons/favicon-16x16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-48x48.png" sizes="48x48" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <script defer src="/static/sightline-shell.js"></script>
+  <link rel="stylesheet" href="/brand/web/sightline-tokens.css" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; background: #111827; color: #e5e7eb; }
+    .card { max-width: 760px; background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 16px; }
+    h1 { margin-top: 0; }
+    .row { display: grid; grid-template-columns: 200px 1fr; gap: 10px; margin-bottom: 10px; align-items: center; }
+    input { background: #111827; color: #e5e7eb; border: 1px solid #4b5563; border-radius: 6px; padding: 8px; }
+    .buttons { display: flex; gap: 10px; margin-top: 14px; }
+    button { background: #2563eb; color: white; border: 0; border-radius: 6px; padding: 10px 12px; cursor: pointer; }
+    button.secondary { background: #4b5563; }
+    .status { margin-top: 14px; color: #93c5fd; }
+    a { color: #93c5fd; }
+  </style>
+  <link rel="stylesheet" href="/static/sightline.css" />
+</head>
+<body class="overlay-page">
+  <div class="card">
+    <a class="brand-link" href="/" aria-label="Sightline home"><img class="brand-logo" src="/brand/logos/svg/sightline-logo-dark.svg" alt="Sightline" width="360" height="96" /></a>
+    <p class="page-heading__eyebrow">Screen overlay</p>
+    <h1>Floating Combat Text Overlay</h1>
+    <p>Use this page to run and position the overlay independently from parser capture.</p>
+    <div class="row"><label for="overlay_monitor_index">Monitor index</label><input id="overlay_monitor_index" type="number" step="1" /></div>
+    <div class="row"><label for="overlay_anchor_x_ratio">Anchor X ratio</label><input id="overlay_anchor_x_ratio" type="number" step="0.01" min="0" max="1" /></div>
+    <div class="row"><label for="overlay_anchor_y_ratio">Anchor Y ratio</label><input id="overlay_anchor_y_ratio" type="number" step="0.01" min="0" max="1" /></div>
+    <div class="row"><label for="overlay_offset_x">Offset X</label><input id="overlay_offset_x" type="number" step="1" /></div>
+    <div class="row"><label for="overlay_offset_y">Offset Y</label><input id="overlay_offset_y" type="number" step="1" /></div>
+    <div class="row"><label for="overlay_damage_out_offset_x">Damage-out X offset</label><input id="overlay_damage_out_offset_x" type="number" step="1" /></div>
+    <div class="row"><label for="overlay_damage_in_offset_x">Damage-in X offset</label><input id="overlay_damage_in_offset_x" type="number" step="1" /></div>
+    <div class="row"><label for="overlay_heal_in_offset_y">Heal Y offset</label><input id="overlay_heal_in_offset_y" type="number" step="1" /></div>
+    <div class="row"><label for="overlay_font_size">Font size</label><input id="overlay_font_size" type="number" step="1" min="1" /></div>
+    <div class="row"><label for="overlay_time_to_fade_s">Time-to-fade (s)</label><input id="overlay_time_to_fade_s" type="number" step="0.1" min="0.1" /></div>
+    <div class="row"><label for="overlay_event_spacing">Spacing between new events</label><input id="overlay_event_spacing" type="number" step="1" min="1" /></div>
+    <div class="row"><label for="overlay_combine_multi_hit">Combine multi-hit abilities</label><input id="overlay_combine_multi_hit" type="checkbox" /></div>
+
+    <div class="buttons">
+      <button onclick="saveSettings()">Save Position</button>
+      <button onclick="startOverlay()">Start Overlay</button>
+      <button class="secondary" onclick="stopOverlay()">Stop Overlay</button>
+      <button class="secondary" onclick="refresh()">Refresh</button>
+    </div>
+
+    <div id="status" class="status" role="status" aria-live="polite">Loading…</div>
+    <p><a href="/">Back to parser UI</a></p>
+  </div>
+
+  <script>
+    async function fetchJson(url, options) {
+      const res = await fetch(url, options);
+      if (!res.ok) {
+        throw new Error(`${url} failed (${res.status})`);
+      }
+      return res.json();
+    }
+
+    async function loadSettings() {
+      const settings = await fetchJson('/api/settings');
+      ['overlay_monitor_index', 'overlay_anchor_x_ratio', 'overlay_anchor_y_ratio', 'overlay_offset_x', 'overlay_offset_y', 'overlay_damage_out_offset_x', 'overlay_damage_in_offset_x', 'overlay_heal_in_offset_y', 'overlay_font_size', 'overlay_time_to_fade_s', 'overlay_event_spacing']
+        .forEach((key) => {
+          document.getElementById(key).value = settings[key];
+        });
+      document.getElementById('overlay_combine_multi_hit').checked = settings.overlay_combine_multi_hit;
+    }
+
+    function readValidatedNumber(id, minimum) {
+      const input = document.getElementById(id);
+      const value = input.valueAsNumber;
+      const isValid = input.value !== '' && Number.isFinite(value) && value >= minimum;
+      if (!isValid) {
+        input.setCustomValidity(`Enter a value of at least ${minimum}.`);
+        input.reportValidity();
+        throw new Error(`${id} must be at least ${minimum}`);
+      }
+      input.setCustomValidity('');
+      return value;
+    }
+
+    async function saveSettings() {
+      const current = await fetchJson('/api/settings');
+      ['overlay_monitor_index', 'overlay_anchor_x_ratio', 'overlay_anchor_y_ratio', 'overlay_offset_x', 'overlay_offset_y', 'overlay_damage_out_offset_x', 'overlay_damage_in_offset_x', 'overlay_heal_in_offset_y']
+        .forEach((key) => {
+          current[key] = Number(document.getElementById(key).value);
+        });
+      current.overlay_font_size = readValidatedNumber('overlay_font_size', 1);
+      current.overlay_time_to_fade_s = readValidatedNumber('overlay_time_to_fade_s', 0.1);
+      current.overlay_event_spacing = readValidatedNumber('overlay_event_spacing', 1);
+      current.overlay_combine_multi_hit = document.getElementById('overlay_combine_multi_hit').checked;
+      await fetchJson('/api/settings', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(current),
+      });
+      await refresh();
+    }
+
+    async function startOverlay() {
+      await fetchJson('/api/overlay/start', { method: 'POST' });
+      await refresh();
+    }
+
+    async function stopOverlay() {
+      await fetchJson('/api/overlay/stop', { method: 'POST' });
+      await refresh();
+    }
+
+    async function refresh() {
+      const overlay = await fetchJson('/api/overlay/status');
+      document.getElementById('status').textContent = `Overlay active: ${overlay.active} (manual=${overlay.manual_requested}, parser=${overlay.parser_requested})`;
+    }
+
+    async function init() {
+      try {
+        await loadSettings();
+        await refresh();
+      } catch (err) {
+        document.getElementById('status').textContent = err.message;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

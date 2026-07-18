@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Configure Sightline capture, recognition, and overlay behavior." />
+  <meta name="theme-color" content="#0F1117" />
+  <meta property="og:title" content="Sightline — Settings" />
+  <meta property="og:description" content="Gameplay, brought into focus." />
+  <meta property="og:type" content="website" />
+  <title>Settings — Sightline</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicons/favicon-16x16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-48x48.png" sizes="48x48" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <script defer src="/static/sightline-shell.js"></script>
+  <link rel="stylesheet" href="/brand/web/sightline-tokens.css" />
+  <style>
+    :root {
+      --base: #24273a;
+      --mantle: #1e2030;
+      --crust: #181926;
+      --text: #cad3f5;
+      --subtext0: #a5adcb;
+      --surface0: #363a4f;
+      --surface1: #494d64;
+      --blue: #8aadf4;
+      --green: #a6da95;
+      --yellow: #eed49f;
+      --peach: #f5a97f;
+      --teal: #8bd5ca;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Arial, sans-serif; background: var(--base); color: var(--text); }
+    .topbar { padding: 10px 12px; min-height: 56px; background: var(--crust); display:flex; gap:14px; align-items:center; border-bottom:1px solid var(--surface0); }
+    .topbar-controls { display:flex; gap:8px; min-width: 150px; }
+    .topbar-nav { display:flex; gap:14px; align-items:center; }
+    .topbar a { color: var(--blue); text-decoration:none; font-weight: 600; }
+    .topbar a:hover { color: var(--teal); }
+    .topbar-current { color: var(--text); font-weight: 600; }
+    .content { padding: 14px; max-width: 980px; margin: 0 auto; }
+    .panel { background: var(--mantle); border:1px solid var(--surface0); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .panel h3 { margin: 0 0 10px 0; }
+    .row { display:flex; gap:12px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    .row label { display:flex; align-items:center; gap:6px; }
+    button, input {
+      background: var(--surface0);
+      color: var(--text);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+    }
+    button { padding: 6px 10px; cursor: pointer; }
+    input[type="number"], input[type="text"] { padding: 5px 8px; }
+    .hint { color: var(--subtext0); font-size: 12px; }
+    .guidance { border: 1px solid var(--peach); background: rgba(245, 169, 127, 0.15); border-radius: 8px; padding: 10px; margin-bottom: 12px; }
+    .guidance strong { color: var(--yellow); }
+    .status { color: var(--green); font-size: 12px; margin-left: auto; }
+  </style>
+  <link rel="stylesheet" href="/static/sightline.css" />
+</head>
+<body>
+<div class="topbar">
+  <a class="brand-link" href="/" aria-label="Sightline home"><img class="brand-logo" src="/brand/logos/svg/sightline-logo-dark.svg" alt="Sightline" width="360" height="96" /></a>
+  <div class="topbar-controls">
+    <button onclick="startParser()">Start</button>
+    <button onclick="stopParser()">Stop</button>
+  </div>
+  <div class="topbar-nav">
+    <a href="/">Live Log</a>
+    <a href="/encounters">Encounters</a>
+    <span class="topbar-current" aria-current="page">Settings</span>
+    <a href="/replay" data-debug-only hidden style="display:none" aria-hidden="true">Replay Harness</a>
+  </div>
+  <span class="status" id="status" role="status" aria-live="polite"></span>
+</div>
+<div class="content">
+  <header class="page-heading">
+    <div><p class="page-heading__eyebrow">System configuration</p><h1>Capture settings</h1><p>Tune the screen region, recognition pipeline, and in-game overlay without changing your encounter data.</p></div>
+  </header>
+  <div id="regionGuidance" class="guidance" style="display:none;">
+    <strong>Combat region required:</strong> Set your combat region before starting the parser, otherwise OCR cannot read combat text.
+  </div>
+
+  <div class="panel">
+    <h3>Parser Settings</h3>
+    <div class="row">
+      <button onclick="selectRegion()">Select Combat Region</button>
+      <button type="button" onclick="location.assign('/onboarding')">Open Setup Guide</button>
+      <span id="regionSummary" class="hint"></span>
+    </div>
+    <div class="row">
+      <label>Interval(ms): <input id="captureInterval" type="number" style="width:90px"/></label>
+      <label title="Improves OCR accuracy by adding extra preprocessing (scaling + blur). This increases processing time and CPU usage.">
+        <input id="increaseAccuracy" type="checkbox"/> Increase Accuracy
+      </label>
+    </div>
+    <div class="focus-allowlist">
+      <label><input id="requireGameFocus" type="checkbox" onchange="renderAllowedFocusExecutables()"/> Restrict capture to allowed applications</label>
+      <p id="focusAllowlistDescription" class="focus-allowlist__description">When enabled, Sightline captures only while one of these executables is the foreground application. Add your game; leave browsers and personal applications off the list unless you explicitly want their selected screen region captured.</p>
+      <div class="executable-editor">
+        <label for="focusExecutableInput">Executable name
+          <input id="focusExecutableInput" type="text" placeholder="e.g. mygame.exe" autocomplete="off" aria-describedby="focusAllowlistDescription" />
+        </label>
+        <button type="button" class="secondary" onclick="addAllowedFocusExecutable()">Add application</button>
+      </div>
+      <div id="allowedFocusExecutables" class="executable-list" role="list" aria-live="polite"></div>
+      <p id="emptyFocusAllowlistWarning" class="focus-allowlist__warning" hidden>No applications are allowed. Capture will pause whenever Windows can identify the foreground application.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Debug / OCR Settings</h3>
+    <div class="row">
+      <label><input id="debugMode" type="checkbox" onchange="toggleOcrPassesVisibility()"/> Debug Mode</label>
+    </div>
+    <div id="ocrPassesContainer" class="row" style="display:none;">
+      <span>OCR passes:</span>
+      <label><input id="ocrPassRaw" type="checkbox" data-pass-name="raw"/> Raw</label>
+      <label><input id="ocrPassWholeThreshold" type="checkbox" data-pass-name="whole_threshold" checked/> Whole threshold</label>
+      <label><input id="ocrPassRedMask" type="checkbox" data-pass-name="red_mask"/> Red mask</label>
+      <label><input id="ocrPassYellowMask" type="checkbox" data-pass-name="yellow_mask"/> Yellow mask</label>
+      <label><input id="ocrPassGreenMask" type="checkbox" data-pass-name="green_mask"/> Green mask</label>
+      <label><input id="ocrPassWhiteMask" type="checkbox" data-pass-name="white_mask"/> White mask</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Overlay Settings</h3>
+    <div class="row">
+      <label>Monitor <input id="overlay_monitor_index" type="number" style="width:80px"/></label>
+      <label>Anchor X <input id="overlay_anchor_x_ratio" type="number" step="0.01" min="0" max="1" style="width:90px"/></label>
+      <label>Anchor Y <input id="overlay_anchor_y_ratio" type="number" step="0.01" min="0" max="1" style="width:90px"/></label>
+    </div>
+    <div class="row">
+      <label>Offset X <input id="overlay_offset_x" type="number" style="width:80px"/></label>
+      <label>Offset Y <input id="overlay_offset_y" type="number" style="width:80px"/></label>
+      <label>Damage-out X <input id="overlay_damage_out_offset_x" type="number" style="width:80px"/></label>
+      <label>Damage-in X <input id="overlay_damage_in_offset_x" type="number" style="width:80px"/></label>
+      <label>Heal Y <input id="overlay_heal_in_offset_y" type="number" style="width:80px"/></label>
+    </div>
+    <div class="row">
+      <label>Font size <input id="overlay_font_size" type="number" step="1" min="1" style="width:80px"/></label>
+      <label>Time-to-fade (s) <input id="overlay_time_to_fade_s" type="number" step="0.1" min="0.1" style="width:80px"/></label>
+      <label>Spacing between new events <input id="overlay_event_spacing" type="number" step="1" min="1" style="width:80px"/></label>
+      <label><input id="overlay_combine_multi_hit" type="checkbox"/> Combine multi-hit abilities</label>
+    </div>
+  </div>
+
+  <div class="row">
+    <button onclick="saveSettings()">Save Settings</button>
+  </div>
+
+  <div class="panel">
+    <h3>About Sightline</h3>
+    <p class="hint">Sightline <span data-sightline-version>…</span> · build <a data-sightline-commit href="#">…</a> · AGPL-3.0-only</p>
+    <p class="hint"><a data-sightline-source href="#">Source code</a> · <a href="/legal/privacy">Privacy</a> · <a href="/legal/code-signing">Code signing</a> · <a href="/legal/security">Report a security issue</a></p>
+    <div class="row"><button type="button" onclick="exportDiagnostics()">Export Sanitized Support Bundle</button></div>
+  </div>
+</div>
+
+<script>
+const OCR_PASS_IDS = [
+  "ocrPassRaw",
+  "ocrPassWholeThreshold",
+  "ocrPassRedMask",
+  "ocrPassYellowMask",
+  "ocrPassGreenMask",
+  "ocrPassWhiteMask",
+];
+let allowedFocusExecutableNames = [];
+const captureInterval = document.getElementById('captureInterval');
+const requireGameFocus = document.getElementById('requireGameFocus');
+const increaseAccuracy = document.getElementById('increaseAccuracy');
+const debugMode = document.getElementById('debugMode');
+const ocrPassesContainer = document.getElementById('ocrPassesContainer');
+const allowedFocusExecutables = document.getElementById('allowedFocusExecutables');
+const emptyFocusAllowlistWarning = document.getElementById('emptyFocusAllowlistWarning');
+const focusExecutableInput = document.getElementById('focusExecutableInput');
+const overlay_combine_multi_hit = document.getElementById('overlay_combine_multi_hit');
+const regionSummary = document.getElementById('regionSummary');
+const regionGuidance = document.getElementById('regionGuidance');
+const status = document.getElementById('status');
+
+async function api(path, method='GET', body=null){
+  const res = await fetch(path, {
+    method,
+    headers:{'Content-Type':'application/json'},
+    body: body ? JSON.stringify(body) : null,
+    cache: method === 'GET' ? 'no-store' : 'default',
+    credentials: 'same-origin',
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function toggleOcrPassesVisibility(){
+  ocrPassesContainer.style.display = debugMode.checked ? 'flex' : 'none';
+}
+
+function setOcrPassCheckboxes(selectedPasses){
+  const selected = new Set(selectedPasses);
+  OCR_PASS_IDS.forEach((id) => {
+    const input = document.getElementById(id);
+    input.checked = selected.has(input.dataset.passName);
+  });
+}
+
+function getSelectedOcrPasses(){
+  const selected = OCR_PASS_IDS
+    .map((id) => document.getElementById(id))
+    .filter((input) => input.checked)
+    .map((input) => input.dataset.passName);
+  return selected.length ? selected : ['whole_threshold'];
+}
+
+function normalizeExecutableName(value){
+  let executable = String(value || '').trim().replace(/^['"]+|['"]+$/g, '');
+  executable = executable.replaceAll('/', '\\').split('\\').pop().trim().toLowerCase();
+  if(!executable) return '';
+  if(!executable.endsWith('.exe')) executable += '.exe';
+  return executable === '.exe' ? '' : executable;
+}
+
+function setAllowedFocusExecutables(values){
+  allowedFocusExecutableNames = [];
+  for(const value of (Array.isArray(values) ? values : [])){
+    const executable = normalizeExecutableName(value);
+    if(executable && !allowedFocusExecutableNames.includes(executable)){
+      allowedFocusExecutableNames.push(executable);
+    }
+  }
+  renderAllowedFocusExecutables();
+}
+
+function renderAllowedFocusExecutables(){
+  allowedFocusExecutables.replaceChildren();
+  if(!allowedFocusExecutableNames.length){
+    const empty = document.createElement('span');
+    empty.className = 'executable-list__empty';
+    empty.textContent = 'No applications added.';
+    allowedFocusExecutables.appendChild(empty);
+  } else {
+    for(const executable of allowedFocusExecutableNames){
+      const item = document.createElement('span');
+      item.className = 'executable-chip';
+      item.setAttribute('role', 'listitem');
+      const name = document.createElement('code');
+      name.textContent = executable;
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.textContent = '×';
+      remove.setAttribute('aria-label', `Remove ${executable}`);
+      remove.addEventListener('click', () => removeAllowedFocusExecutable(executable));
+      item.append(name, remove);
+      allowedFocusExecutables.appendChild(item);
+    }
+  }
+  emptyFocusAllowlistWarning.hidden = !(requireGameFocus.checked && !allowedFocusExecutableNames.length);
+}
+
+function addAllowedFocusExecutable(){
+  const executable = normalizeExecutableName(focusExecutableInput.value);
+  if(!executable){
+    focusExecutableInput.setCustomValidity('Enter an executable name.');
+    focusExecutableInput.reportValidity();
+    return;
+  }
+  focusExecutableInput.setCustomValidity('');
+  if(!allowedFocusExecutableNames.includes(executable)){
+    allowedFocusExecutableNames.push(executable);
+  }
+  focusExecutableInput.value = '';
+  renderAllowedFocusExecutables();
+  focusExecutableInput.focus();
+}
+
+function removeAllowedFocusExecutable(executable){
+  allowedFocusExecutableNames = allowedFocusExecutableNames.filter((name) => name !== executable);
+  renderAllowedFocusExecutables();
+}
+
+function readValidatedNumber(id, minimum){
+  const input = document.getElementById(id);
+  const value = input.valueAsNumber;
+  const isValid = input.value !== '' && Number.isFinite(value) && value >= minimum;
+  if(!isValid){
+    input.setCustomValidity(`Enter a value of at least ${minimum}.`);
+    input.reportValidity();
+    throw new Error(`${id} must be at least ${minimum}`);
+  }
+  input.setCustomValidity('');
+  return value;
+}
+
+function applySettings(s){
+  captureInterval.value = s.capture_interval_ms;
+  requireGameFocus.checked = s.require_game_focus;
+  setAllowedFocusExecutables(s.allowed_focus_executables);
+  increaseAccuracy.checked = s.increase_accuracy;
+  debugMode.checked = s.debug_mode;
+  setOcrPassCheckboxes((s.ocr_passes_enabled && s.ocr_passes_enabled.length) ? s.ocr_passes_enabled : ['whole_threshold']);
+  toggleOcrPassesVisibility();
+
+  [
+    'overlay_monitor_index','overlay_anchor_x_ratio','overlay_anchor_y_ratio','overlay_offset_x','overlay_offset_y',
+    'overlay_damage_out_offset_x','overlay_damage_in_offset_x','overlay_heal_in_offset_y',
+    'overlay_font_size','overlay_time_to_fade_s','overlay_event_spacing'
+  ].forEach((key) => {
+    document.getElementById(key).value = s[key];
+  });
+  overlay_combine_multi_hit.checked = s.overlay_combine_multi_hit;
+
+  regionSummary.textContent = `Current region: (${s.capture_x}, ${s.capture_y}, ${s.capture_width}, ${s.capture_height})`;
+  regionGuidance.style.display = s.combat_region_configured ? 'none' : 'block';
+}
+
+async function loadAll(){
+  const [settings, parser] = await Promise.all([api('/api/settings'), api('/api/status')]);
+  applySettings(settings);
+  status.textContent = `Parser: ${parser.running ? 'running' : 'stopped'}`;
+}
+
+async function saveSettings(){
+  status.textContent = 'Saving settings…';
+  try {
+    const current = await api('/api/settings');
+    const requestedDebugMode = debugMode.checked;
+    current.capture_interval_ms = Number(captureInterval.value);
+    current.require_game_focus = requireGameFocus.checked;
+    current.allowed_focus_executables = allowedFocusExecutableNames.slice();
+    current.increase_accuracy = increaseAccuracy.checked;
+    current.debug_mode = requestedDebugMode;
+    current.ocr_passes_enabled = getSelectedOcrPasses();
+    [
+      'overlay_monitor_index','overlay_anchor_x_ratio','overlay_anchor_y_ratio','overlay_offset_x','overlay_offset_y',
+      'overlay_damage_out_offset_x','overlay_damage_in_offset_x','overlay_heal_in_offset_y'
+    ].forEach((key) => {
+      current[key] = Number(document.getElementById(key).value);
+    });
+    current.overlay_font_size = readValidatedNumber('overlay_font_size', 1);
+    current.overlay_time_to_fade_s = readValidatedNumber('overlay_time_to_fade_s', 0.1);
+    current.overlay_event_spacing = readValidatedNumber('overlay_event_spacing', 1);
+    current.overlay_combine_multi_hit = overlay_combine_multi_hit.checked;
+    const saved = await api('/api/settings', 'PUT', current);
+    if(Boolean(saved.debug_mode) !== requestedDebugMode){
+      throw new Error('Debug Mode did not persist.');
+    }
+    applySettings(saved);
+    await window.SightlineShell?.refresh();
+    status.textContent = requestedDebugMode
+      ? 'Settings saved · Debug Mode enabled · Replay Harness available'
+      : 'Settings saved · Debug Mode disabled';
+  } catch(error) {
+    status.textContent = `Settings were not saved: ${error.message}`;
+  }
+}
+
+async function startParser(){
+  await api('/api/parser/start', 'POST');
+  await loadAll();
+}
+
+async function stopParser(){
+  await api('/api/parser/stop', 'POST');
+  await loadAll();
+}
+
+async function selectRegion(){
+  await api('/api/settings/select-region', 'POST');
+  await loadAll();
+}
+
+async function exportDiagnostics(){
+  const response = await fetch('/api/diagnostics/export', {method:'POST', credentials:'same-origin'});
+  if(!response.ok) throw new Error(await response.text());
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const filename = disposition.match(/filename="([^"]+)"/)?.[1] || 'Sightline-Diagnostics.zip';
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+focusExecutableInput.addEventListener('input', () => focusExecutableInput.setCustomValidity(''));
+focusExecutableInput.addEventListener('keydown', (event) => {
+  if(event.key === 'Enter'){
+    event.preventDefault();
+    addAllowedFocusExecutable();
+  }
+});
+
+loadAll();
+</script>
+</body>
+</html>

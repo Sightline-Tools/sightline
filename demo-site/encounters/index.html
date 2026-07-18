@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Analyze encounter performance with Sightline." />
+  <meta name="theme-color" content="#0F1117" />
+  <meta property="og:title" content="Sightline — Encounters" />
+  <meta property="og:description" content="Gameplay, brought into focus." />
+  <meta property="og:type" content="website" />
+  <title>Encounters — Sightline</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicons/favicon-16x16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-48x48.png" sizes="48x48" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <script defer src="/static/sightline-shell.js"></script>
+  <link rel="stylesheet" href="/brand/web/sightline-tokens.css" />
+  <style>
+    :root {
+      --base: #24273a;
+      --mantle: #1e2030;
+      --crust: #181926;
+      --text: #cad3f5;
+      --subtext1: #b8c0e0;
+      --subtext0: #a5adcb;
+      --surface0: #363a4f;
+      --surface1: #494d64;
+      --surface2: #5b6078;
+      --blue: #8aadf4;
+      --green: #a6da95;
+      --teal: #8bd5ca;
+      --maroon: #ee99a0;
+      --rosewater: #f4dbd6;
+      --flamingo: #f0c6c6;
+      --pink: #f5bde6;
+      --mauve: #c6a0f6;
+      --red: #ed8796;
+      --peach: #f5a97f;
+      --yellow: #eed49f;
+      --sky: #91d7e3;
+      --sapphire: #7dc4e4;
+      --lavender: #b7bdf8;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Arial, sans-serif; background:var(--base); color: var(--text); }
+    .topbar { padding:10px 12px; min-height: 56px; background:var(--crust); color:var(--text); display:flex; align-items:center; gap:14px; border-bottom:1px solid var(--surface0); }
+    .topbar-controls { display:flex; gap:8px; min-width: 150px; }
+    .topbar-nav { display:flex; gap:14px; align-items:center; }
+    .topbar a { color:var(--blue); text-decoration:none; font-weight: 600; }
+    .topbar a:hover { color:var(--teal); }
+    .topbar-current { color: var(--text); font-weight: 600; }
+    #liveStatus { margin-left: auto; font-size: 12px; color: var(--subtext0); }
+    .container { display:grid; grid-template-columns: minmax(270px, 30%) 1fr; height: calc(100vh - 56px); }
+    .pane { padding:12px; overflow:auto; }
+    .card { background:var(--mantle); border:1px solid var(--surface0); border-radius:8px; padding:10px; margin-bottom:10px; }
+    .encounter-row { padding:6px 8px; border-bottom:1px solid var(--surface0); cursor:pointer; border-radius:6px; }
+    .encounter-row.active { background:rgba(138, 173, 244, 0.14); }
+    .encounter-row-header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .encounter-row-main { display:flex; align-items:center; gap:8px; min-width:0; }
+    .encounter-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .icon-btn { padding:2px 6px; line-height:1.2; font-size:14px; }
+    .section-title-row { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+    .collapsible summary { cursor:pointer; font-weight:700; margin-bottom:8px; }
+    .live-controls-inline { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .filter-controls { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
+    .party-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .party-row input[type="text"] { flex: 0 0 52%; min-width: 140px; }
+    .party-pet-row { display:flex; align-items:center; gap:8px; margin: 0 0 6px 18px; }
+    .party-pet-prefix { color: var(--subtext0); font-size: 15px; }
+    .party-pet-row input[type="text"] { flex: 0 0 calc(45% + 1px); min-width: 124px; }
+    .party-header { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .party-actions { display:flex; align-items:center; gap:8px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom:1px solid var(--surface0); padding:6px; font-size: 13px; text-align:left; }
+    th { cursor:pointer; }
+    .actor-table,
+    .breakdown-table { border: 1px solid var(--surface0); }
+    .actor-table th,
+    .actor-table td,
+    .breakdown-table th,
+    .breakdown-table td { border-right: 1px solid var(--surface0); }
+    .actor-table th:last-child,
+    .actor-table td:last-child,
+    .breakdown-table th:last-child,
+    .breakdown-table td:last-child { border-right: none; }
+    .metric { display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:8px; }
+    .metric-item { background:var(--surface0); border:1px solid var(--surface1); border-radius:6px; padding:8px; }
+    .dps-visualization { margin-top: 12px; max-width: 520px; }
+    .dps-viz-list { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+    .dps-viz-row { display:grid; grid-template-columns: minmax(120px, 160px) minmax(170px, 260px) 64px; align-items:center; gap:8px; }
+    .dps-viz-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+    .dps-viz-bar-track { width:100%; height:14px; border-radius:4px; background:rgba(91, 96, 120, 0.28); border:1px solid var(--surface1); overflow:hidden; }
+    .dps-viz-bar-fill { height:100%; min-width:2px; }
+    .dps-viz-pct { text-align:right; font-variant-numeric:tabular-nums; font-size:12px; color:var(--subtext1); }
+    .controls { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+    .small { font-size:12px; color:var(--subtext0); }
+    .table-section-heading { display:flex; align-items:center; gap:6px; margin:1.33em 0; }
+    .table-section-heading h4 { margin:0; }
+    .info-tooltip {
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:16px;
+      height:16px;
+      border:1px solid var(--surface2);
+      border-radius:50%;
+      color:var(--subtext1);
+      cursor:help;
+      font-size:11px;
+      font-weight:700;
+      line-height:1;
+    }
+    .info-tooltip__content {
+      position:absolute;
+      z-index:10;
+      bottom:calc(100% + 8px);
+      left:50%;
+      width:max-content;
+      max-width:min(360px, 70vw);
+      padding:7px 9px;
+      border:1px solid var(--surface1);
+      border-radius:6px;
+      background:var(--crust);
+      color:var(--text);
+      box-shadow:0 4px 12px rgba(0, 0, 0, 0.35);
+      font-size:12px;
+      font-weight:400;
+      line-height:1.4;
+      opacity:0;
+      pointer-events:none;
+      transform:translate(-50%, 3px);
+      transition:opacity 120ms ease, transform 120ms ease;
+      visibility:hidden;
+    }
+    .info-tooltip:hover .info-tooltip__content,
+    .info-tooltip:focus-visible .info-tooltip__content {
+      opacity:1;
+      transform:translate(-50%, 0);
+      visibility:visible;
+    }
+    .info-tooltip--align-left .info-tooltip__content {
+      left:0;
+      transform:translate(0, 3px);
+    }
+    .info-tooltip--align-left:hover .info-tooltip__content,
+    .info-tooltip--align-left:focus-visible .info-tooltip__content {
+      transform:translate(0, 0);
+    }
+    .info-tooltip:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    tr.actor-row { cursor: pointer; }
+    tr.actor-row:nth-child(odd) { background: rgba(91, 96, 120, 0.12); }
+    tr.actor-row:nth-child(even) { background: rgba(91, 96, 120, 0.2); }
+    tr.actor-row.expanded { background: rgba(139, 213, 202, 0.12); }
+    tr.breakdown-row td { background: rgba(91, 96, 120, 0.22); }
+    .breakdown-wrap { padding: 8px; }
+    .subtle { color:var(--subtext0); font-size:12px; }
+    button, input, select {
+      background: var(--surface0);
+      color: var(--text);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+    }
+    button { padding: 6px 10px; cursor: pointer; }
+    button:hover { background: var(--surface1); }
+    input[type="number"], input[type="text"], select { padding: 5px 8px; }
+    input[type="checkbox"] { accent-color: var(--blue); }
+    .live-indicator { color: var(--green); font-weight: 700; }
+    .actor-you { color: var(--green); font-weight: 700; }
+  </style>
+  <link rel="stylesheet" href="/static/sightline.css" />
+  <script>
+    window.SIGHTLINE_DEMO = true;
+    document.documentElement.classList.add('demo-mode');
+  </script>
+  <script src="/static/demo-api.js"></script>
+</head>
+<body class="encounters-page">
+<div class="topbar">
+  <a class="brand-link" href="/" aria-label="Sightline home"><img class="brand-logo" src="/brand/logos/svg/sightline-logo-dark.svg" alt="Sightline" width="360" height="96" /></a>
+  <div class="topbar-controls">
+    <button onclick="startParser()">Start</button>
+    <button onclick="stopParser()">Stop</button>
+  </div>
+  <div class="topbar-nav">
+    <a href="/">Live Log</a>
+    <span class="topbar-current" aria-current="page">Encounters</span>
+    <a href="/settings">Settings</a>
+  </div>
+  <span id="liveStatus" role="status" aria-live="polite"></span>
+</div>
+<div class="container">
+  <header class="page-heading">
+    <div><p class="page-heading__eyebrow">Encounter analysis</p><h1>Performance in focus</h1><p>Follow live capture health, compare combat signals, and inspect the details behind each encounter.</p></div>
+  </header>
+  <div class="pane">
+    <div class="card">
+      <div class="filter-controls">
+        <label>Encounter Filter
+          <select id="encounterFilterMode" onchange="onEncounterFilterModeChange()">
+            <option value="none">No filter</option>
+            <option value="solo">Solo mode</option>
+            <option value="party">Party mode</option>
+          </select>
+        </label>
+        <details id="partyConfigSection" class="collapsible" hidden>
+          <summary>Party Configuration</summary>
+          <div id="partyConfigBody"></div>
+        </details>
+      </div>
+      <div class="controls">
+        <label>Sort
+          <select id="listSort" onchange="renderEncounterList()">
+            <option value="started_at">Started (Newest)</option>
+            <option value="dps">DPS</option>
+            <option value="damage_done">Damage Done</option>
+            <option value="damage_taken">Damage Taken</option>
+            <option value="healing_done">Healing Done</option>
+            <option value="healing_received">Healing Received</option>
+            <option value="hit_pct">Hit %</option>
+            <option value="duration_seconds">Duration</option>
+          </select>
+        </label>
+        <button onclick="mergeSelected()">Merge Selected</button>
+        <button onclick="clearAllEncounters()">Clear</button>
+      </div>
+      <div id="encounterList"></div>
+    </div>
+  </div>
+  <div class="pane">
+    <div class="card">
+      <div class="section-title-row">
+        <h3 style="margin:0;">Live Encounter</h3>
+        <button onclick="manualEnd()">End Encounter</button>
+      </div>
+      <details class="collapsible">
+        <summary>Controls</summary>
+        <div class="live-controls-inline">
+          <label>Timeout(s) <input id="timeoutInput" type="number" min="1" style="width:70px;"/></label>
+          <label><input id="autoFollowLatestEncounter" type="checkbox" checked onchange="onAutoFollowLatestEncounterChange()"/> Auto-scroll latest</label>
+          <label><input id="hotkeyEnabled" type="checkbox"/> Hotkey enabled</label>
+          <label>Hotkey <input id="hotkeyBinding" type="text" style="width:100px;"/></label>
+          <button onclick="saveEncounterSettings()">Save</button>
+        </div>
+      </details>
+      <div class="small">Default hotkey is Shift+F3. Global Windows hook is intentionally optional; this page currently supports in-page hotkey.</div>
+    </div>
+    <div class="card" id="detailPanel">Select an encounter.</div>
+  </div>
+</div>
+<script>
+let encounters = [];
+let selectedEncounterId = null;
+let selectedMergeIds = new Set();
+let actorSort = { key: 'dps', desc: true };
+let encounterDetail = null;
+let lastDetailRenderSignature = null;
+let expandedActors = new Set();
+let breakdownSort = { key: 'damage', desc: true };
+let actorColorAssignments = new Map();
+let playerColorCursor = 0;
+let playerColorSequence = [];
+const MAX_PARTY_MEMBERS = 5;
+let encounterFilterMode = 'none';
+let encounterPartyMembers = [];
+let autoFollowLatestEncounter = true;
+let lastKnownLatestEncounterId = null;
+const AUTO_FOLLOW_LATEST_STORAGE_KEY = 'sightline.autoFollowLatestEncounter';
+const encounterFilterModeInput = document.getElementById('encounterFilterMode');
+const partyConfigSectionEl = document.getElementById('partyConfigSection');
+const partyConfigBodyEl = document.getElementById('partyConfigBody');
+const autoFollowLatestEncounterInput = document.getElementById('autoFollowLatestEncounter');
+
+const PLAYER_COLOR_SWATCHES = [
+  { name: 'signal-blue', hex: '#2563ff' },
+  { name: 'clear-blue', hex: '#4c7dff' },
+  { name: 'soft-blue', hex: '#6f95ff' },
+  { name: 'blue-violet', hex: '#6670ff' },
+  { name: 'signal-violet', hex: '#7b5cff' },
+  { name: 'soft-violet', hex: '#967dff' },
+  { name: 'pale-violet', hex: '#b2a2ff' },
+];
+
+function hashString(value){
+  let hash = 2166136261;
+  const text = String(value || '');
+  for(let i = 0; i < text.length; i += 1){
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash >>> 0);
+}
+
+function initializePlayerColorSequence(seedValue){
+  const len = PLAYER_COLOR_SWATCHES.length;
+  if(!len){
+    playerColorSequence = [];
+    playerColorCursor = 0;
+    return;
+  }
+  const start = hashString(seedValue) % len;
+  const step = 3; // coprime with 7 -> separated shades for adjacent actors
+  playerColorSequence = [];
+  for(let i = 0; i < len; i += 1){
+    const index = (start + (i * step)) % len;
+    playerColorSequence.push(PLAYER_COLOR_SWATCHES[index]);
+  }
+  playerColorCursor = 0;
+}
+
+function isNpcActorName(actorName){
+  const normalized = String(actorName || '').trim().toLowerCase();
+  if(!normalized || normalized === 'you') return false;
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  if(!tokens.length) return false;
+  if(['a', 'an', 'the'].includes(tokens[0])) return true;
+  return tokens.length > 1;
+}
+
+function getActorColorKey(actorName){
+  return String(actorName || '').trim().toLowerCase();
+}
+
+function assignPlayerColor(actorName){
+  const actorKey = getActorColorKey(actorName);
+  if(actorColorAssignments.has(actorKey)) return actorColorAssignments.get(actorKey);
+  if(!playerColorSequence.length) initializePlayerColorSequence(selectedEncounterId ?? 'encounter');
+  const swatch = playerColorSequence[playerColorCursor % playerColorSequence.length];
+  playerColorCursor += 1;
+  actorColorAssignments.set(actorKey, swatch);
+  return swatch;
+}
+
+function formatActorName(actorName, escapeHtml){
+  const normalized = String(actorName || '').trim().toLowerCase();
+  if(normalized === 'you') return `<span class="actor-you">${escapeHtml(actorName)}</span>`;
+  if(isNpcActorName(actorName)) return escapeHtml(actorName);
+  const swatch = assignPlayerColor(actorName);
+  return `<span style="color:${swatch.hex}; font-weight:600;">${escapeHtml(actorName)}</span>`;
+}
+
+function getActorBarColor(actorName){
+  const normalized = String(actorName || '').trim().toLowerCase();
+  if(normalized === 'you') return 'var(--green)';
+  if(isNpcActorName(actorName)) return '#7b5cff';
+  return assignPlayerColor(actorName).hex;
+}
+
+function formatTakenWithMitigation(damageTaken, damageAbsorbed, damageBlocked){
+  const taken = Number(damageTaken ?? 0);
+  const absorbed = Number(damageAbsorbed ?? 0);
+  const blocked = Number(damageBlocked ?? 0);
+  const mitigated = absorbed + blocked;
+  if(mitigated > 0) return `${taken} (${mitigated})`;
+  return `${taken}`;
+}
+
+async function api(path, method='GET', body=null){
+  const res = await fetch(path, {method, headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : null});
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function sortRows(rows, key){
+  const isDate = key === 'started_at';
+  return rows.slice().sort((a,b) => {
+    const av = isDate ? new Date(a[key]).getTime() : Number(a[key] ?? 0);
+    const bv = isDate ? new Date(b[key]).getTime() : Number(b[key] ?? 0);
+    return bv - av;
+  });
+}
+
+function encounterStartedAtTime(row){
+  const timestamp = new Date(row.started_at).getTime();
+  return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY;
+}
+
+function getLatestEncounter(rows){
+  return rows.reduce((latest, row) => {
+    if(!latest) return row;
+    const rowStarted = encounterStartedAtTime(row);
+    const latestStarted = encounterStartedAtTime(latest);
+    if(rowStarted !== latestStarted) return rowStarted > latestStarted ? row : latest;
+    return Number(row.id ?? 0) > Number(latest.id ?? 0) ? row : latest;
+  }, null);
+}
+
+function renderEncounterList(){
+  const key = document.getElementById('listSort').value;
+  const sorted = sortRows(encounters, key);
+  encounterList.innerHTML = sorted.map((row) => `
+    <div class="encounter-row ${row.id === selectedEncounterId ? 'active' : ''}" onclick="selectEncounter(${row.id})">
+      <div class="encounter-row-header">
+        <div class="encounter-row-main">
+          <input type="checkbox" aria-label="Select for merge" ${selectedMergeIds.has(row.id) ? 'checked' : ''} onclick="toggleMerge(event, ${row.id})"/>
+          <strong class="encounter-label">${row.label}</strong> ${row.active ? '<span class="live-indicator">(LIVE)</span>' : ''}
+        </div>
+        <button class="icon-btn" title="Delete encounter" onclick="deleteEncounter(event, ${row.id})">✖</button>
+      </div>
+      <span class="small">dps=${row.dps} heal=${row.healing_done} dur=${row.duration_seconds.toFixed(1)}s</span>
+    </div>
+  `).join('');
+}
+
+function toggleMerge(event, id){
+  event.stopPropagation();
+  if(selectedMergeIds.has(id)) selectedMergeIds.delete(id); else selectedMergeIds.add(id);
+  renderEncounterList();
+}
+
+async function selectEncounter(id){
+  selectedEncounterId = id;
+  encounterDetail = await api(`/api/encounters/${id}`);
+  if(!playerColorSequence.length){
+    initializePlayerColorSequence(`${id}:${encounterDetail?.encounter?.started_at || ''}`);
+  }
+  renderEncounterList();
+  renderDetail();
+}
+
+function sortActors(rows){
+  return rows.slice().sort((a,b) => {
+    const av = Number(a[actorSort.key] ?? 0);
+    const bv = Number(b[actorSort.key] ?? 0);
+    return actorSort.desc ? bv-av : av-bv;
+  });
+}
+
+function renderDetail(){
+  const nextDetailRenderSignature = JSON.stringify({
+    encounterDetail,
+    actorSort,
+    breakdownSort,
+    expandedActors: Array.from(expandedActors),
+  });
+  if(nextDetailRenderSignature === lastDetailRenderSignature) return;
+  const actorTableScrollLeft = detailPanel.querySelector('.actor-table')?.scrollLeft ?? 0;
+  if(!encounterDetail){
+    detailPanel.innerHTML = 'Select an encounter.';
+    lastDetailRenderSignature = nextDetailRenderSignature;
+    return;
+  }
+  const e = encounterDetail.encounter;
+  const m = encounterDetail.metrics;
+  const actors = sortActors(m.actors);
+  const visibleActorsByDps = actors
+    .filter((a) => !a.hidden)
+    .slice()
+    .sort((a, b) => Number(b.dps ?? 0) - Number(a.dps ?? 0));
+  const escapeHtml = (value) => String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  const finiteNumberOrNull = (value) => {
+    if(value === null || value === undefined || value === '') return null;
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : null;
+  };
+  const metricNumberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+  const formatMetricNumber = (value) => {
+    const numericValue = finiteNumberOrNull(value);
+    return numericValue === null ? '&mdash;' : metricNumberFormatter.format(numericValue);
+  };
+  const formatMetricRange = (minimum, maximum) => (
+    `${formatMetricNumber(minimum)}&ndash;${formatMetricNumber(maximum)}`
+  );
+  const sortBreakdown = (rows) => rows.slice().sort((a,b) => {
+    const key = breakdownSort.key;
+    const av = key === 'name' || key === 'source_type' ? String(a[key] ?? '') : Number(a[key] ?? 0);
+    const bv = key === 'name' || key === 'source_type' ? String(b[key] ?? '') : Number(b[key] ?? 0);
+    if(key === 'name' || key === 'source_type'){
+      return breakdownSort.desc ? String(bv).localeCompare(String(av)) : String(av).localeCompare(String(bv));
+    }
+    return breakdownSort.desc ? bv-av : av-bv;
+  });
+  const renderActorBreakdown = (actor) => {
+    const sortedRows = sortBreakdown(actor.breakdown || []);
+    return `
+      <tr class="breakdown-row">
+        <td colspan="10">
+          <div class="breakdown-wrap">
+            <div class="subtle">Breakdown for ${escapeHtml(actor.actor)}</div>
+            <table class="breakdown-table">
+              <thead>
+                <tr>
+                  <th onclick="setBreakdownSort('source_type')">Type</th>
+                  <th onclick="setBreakdownSort('name')">Name / Verb</th>
+                  <th onclick="setBreakdownSort('dps')">DPS</th>
+                  <th onclick="setBreakdownSort('damage')">Damage</th>
+                  <th onclick="setBreakdownSort('average_amount')">Average</th>
+                  <th onclick="setBreakdownSort('healing')">Healing</th>
+                  <th onclick="setBreakdownSort('hps')">HPS</th>
+                  <th onclick="setBreakdownSort('hits')">Hits</th>
+                  <th onclick="setBreakdownSort('misses')">Misses</th>
+                  <th onclick="setBreakdownSort('hit_pct')">Hit %</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sortedRows.map((b) => `<tr>
+                  <td>${escapeHtml(b.source_type)}</td>
+                  <td>${escapeHtml(b.name)}</td>
+                  <td>${b.dps}</td>
+                  <td>${b.damage}</td>
+                  <td>${b.average_amount}</td>
+                  <td>${b.healing}</td>
+                  <td>${b.hps}</td>
+                  <td>${b.hits}</td>
+                  <td>${b.misses}</td>
+                  <td>${b.hit_pct}</td>
+                </tr>`).join('') || '<tr><td colspan="10" class="small">No events for this actor</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </td>
+      </tr>
+    `;
+  };
+  const totalEncounterDps = Number(m.totals.dps ?? 0);
+  const maxVisibleDps = Math.max(...visibleActorsByDps.map((a) => Number(a.dps ?? 0)), 0);
+  const visualizationRows = visibleActorsByDps.map((actor) => {
+    const actorDps = Number(actor.dps ?? 0);
+    const dpsPct = totalEncounterDps > 0 ? (actorDps / totalEncounterDps) * 100 : 0;
+    const widthPct = maxVisibleDps > 0 ? (actorDps / maxVisibleDps) * 100 : 0;
+    return `
+      <div class="dps-viz-row">
+        <div class="dps-viz-name">${formatActorName(actor.actor, escapeHtml)}</div>
+        <div class="dps-viz-bar-track">
+          <div class="dps-viz-bar-fill" style="width:${widthPct.toFixed(2)}%; background:${getActorBarColor(actor.actor)};"></div>
+        </div>
+        <div class="dps-viz-pct">${dpsPct.toFixed(1)}%</div>
+      </div>
+    `;
+  }).join('');
+  const charmDamageRows = Array.isArray(m.charm_damage) ? m.charm_damage : [];
+  const normalizedCharmDamageRows = charmDamageRows.map((rawRow) => {
+    const row = rawRow && typeof rawRow === 'object' ? rawRow : {};
+    const explicitMinimum = finiteNumberOrNull(row.minimum_damage);
+    const explicitMaximum = finiteNumberOrNull(row.maximum_damage);
+    const explicitConfirmed = finiteNumberOrNull(row.confirmed_damage);
+    const confirmedDamage = explicitConfirmed ?? explicitMinimum ?? 0;
+    const explicitAmbiguous = finiteNumberOrNull(row.ambiguous_damage);
+    const maximumDamage = explicitMaximum ?? confirmedDamage + (explicitAmbiguous ?? 0);
+    const minimumDamage = explicitMinimum ?? confirmedDamage;
+    const ambiguousDamage = explicitAmbiguous ?? Math.max(maximumDamage - confirmedDamage, 0);
+    const estimatedDamage = finiteNumberOrNull(row.estimated_damage)
+      ?? minimumDamage + ((maximumDamage - minimumDamage) * 0.5);
+    const evidence = row.evidence && typeof row.evidence === 'object' ? row.evidence : {};
+    return {
+      actor: row.actor,
+      confirmedDamage,
+      ambiguousDamage,
+      minimumDamage,
+      maximumDamage,
+      estimatedDamage,
+      dps: row.dps,
+      taggedDamage: evidence.tagged_damage,
+      activeWindowDamage: evidence.active_window_damage,
+    };
+  });
+  const charmDamageSection = normalizedCharmDamageRows.length ? `
+    <div class="table-section-heading">
+      <h4>Charm Attribution</h4>
+      <span class="info-tooltip info-tooltip--align-left" tabindex="0" aria-label="About Charm Attribution" aria-describedby="charm-attribution-tooltip">
+        i
+        <span id="charm-attribution-tooltip" class="info-tooltip__content" role="tooltip">
+          Estimated damage is the midpoint of the attributed range; only same-name ambiguity is weighted at 50%.
+          Potential candidates are excluded from both the estimate and Encounter DPS.
+        </span>
+      </span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Charmed Actor</th>
+          <th>Tagged Damage</th>
+          <th>Active-window Damage</th>
+          <th>Confirmed Damage</th>
+          <th>Same-name Ambiguity</th>
+          <th>Attributed Range</th>
+          <th>Estimated Damage</th>
+          <th>Encounter DPS</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${normalizedCharmDamageRows.map((row) => `<tr>
+          <td>${formatActorName(row.actor ?? 'Unknown actor', escapeHtml)}</td>
+          <td>${formatMetricNumber(row.taggedDamage)}</td>
+          <td>${formatMetricNumber(row.activeWindowDamage)}</td>
+          <td>${formatMetricNumber(row.confirmedDamage)}</td>
+          <td>${formatMetricNumber(row.ambiguousDamage)}</td>
+          <td>${formatMetricRange(row.minimumDamage, row.maximumDamage)}</td>
+          <td>${formatMetricNumber(row.estimatedDamage)}</td>
+          <td>${formatMetricNumber(row.dps)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  ` : '';
+  const potentialCharmRows = Array.isArray(m.potential_charm_damage) ? m.potential_charm_damage : [];
+  const potentialCharmReasonLabels = {
+    recent_charm_cast: 'Recent Charm cast, target not confirmed',
+    npc_vs_npc_without_charm_evidence: 'NPC combat without retained Charm evidence',
+  };
+  const normalizedPotentialCharmRows = potentialCharmRows.map((rawRow) => {
+    const row = rawRow && typeof rawRow === 'object' ? rawRow : {};
+    const candidateDamage = finiteNumberOrNull(row.candidate_damage)
+      ?? finiteNumberOrNull(row.maximum_damage)
+      ?? 0;
+    return {
+      actor: row.actor,
+      candidateDamage,
+      minimumDamage: finiteNumberOrNull(row.minimum_damage) ?? 0,
+      maximumDamage: finiteNumberOrNull(row.maximum_damage) ?? candidateDamage,
+      reason: potentialCharmReasonLabels[row.reason] || row.reason,
+    };
+  });
+  const potentialCharmDamageSection = normalizedPotentialCharmRows.length ? `
+    <div class="table-section-heading">
+      <h4>Potential Charm Candidates</h4>
+      <span class="info-tooltip" tabindex="0" aria-label="About Potential Charm Candidates" aria-describedby="potential-charm-tooltip">
+        i
+        <span id="potential-charm-tooltip" class="info-tooltip__content" role="tooltip">
+          These weak candidates are shown for review and are excluded from Charm attribution and Encounter DPS.
+        </span>
+      </span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate Actor</th>
+          <th>Candidate Damage</th>
+          <th>Possible Range</th>
+          <th>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${normalizedPotentialCharmRows.map((row) => `<tr>
+          <td>${formatActorName(row.actor ?? 'Unknown actor', escapeHtml)}</td>
+          <td>${formatMetricNumber(row.candidateDamage)}</td>
+          <td>${formatMetricRange(row.minimumDamage, row.maximumDamage)}</td>
+          <td>${escapeHtml(row.reason ?? 'Insufficient Charm evidence')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  ` : '';
+  const healingByAbilityRows = Object.entries(m.totals.healing_by_ability || {}).sort((a,b)=>b[1]-a[1]);
+  const healingByAbilitySection = healingByAbilityRows.length ? `
+    <h4>Healing by Ability</h4>
+    <table>
+      <thead><tr><th>Ability</th><th>Healing</th></tr></thead>
+      <tbody>
+        ${healingByAbilityRows.map(([ability,total]) => `<tr><td>${escapeHtml(ability)}</td><td>${total}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  ` : '';
+  detailPanel.innerHTML = `
+    <h3>${e.label} ${e.active ? '<span class="live-indicator">LIVE</span>' : ''}</h3>
+    <div class="small">started ${e.started_at} | ended ${e.ended_at || 'n/a'} | reason ${e.ended_reason || 'n/a'} | capture filter ${escapeHtml(e.capture_filter_mode || 'none')}</div>
+    <div class="metric">
+      <div class="metric-item"><strong>Damage Done</strong><div>${m.totals.damage_done}</div></div>
+      <div class="metric-item"><strong>DPS</strong><div>${m.totals.dps}</div></div>
+      <div class="metric-item"><strong>Damage Taken (Abs.)</strong><div>${formatTakenWithMitigation(m.totals.damage_taken, m.totals.damage_absorbed, m.totals.damage_blocked)}</div></div>
+      <div class="metric-item"><strong>Healing Done</strong><div>${m.totals.healing_done}</div></div>
+      <div class="metric-item"><strong>Healing Received</strong><div>${m.totals.healing_received ?? 0}</div></div>
+      <div class="metric-item"><strong>Hits / Misses</strong><div>${m.totals.hits} / ${m.totals.misses}</div></div>
+      <div class="metric-item"><strong>Hit %</strong><div>${m.totals.hit_pct}</div></div>
+      <div class="metric-item"><strong>Duration</strong><div>${m.duration_seconds.toFixed(1)}s</div></div>
+    </div>
+    <div class="dps-visualization">
+      <h4 style="margin:10px 0 0;">DPS Contribution</h4>
+      <div class="small">Showing checked actors only. Ranked by DPS (top to bottom).</div>
+      <div class="dps-viz-list">
+        ${visualizationRows || '<div class="small">No actors are currently shown.</div>'}
+      </div>
+    </div>
+    <h4>Actors</h4>
+    <table class="actor-table">
+      <thead>
+        <tr>
+          <th onclick="setActorSort('actor')">Actor</th>
+          <th onclick="setActorSort('dps')">DPS</th>
+          <th onclick="setActorSort('damage_done')">Damage</th>
+          <th onclick="setActorSort('damage_taken')">Taken (Abs.)</th>
+          <th onclick="setActorSort('hits')">Hits</th>
+          <th onclick="setActorSort('misses')">Misses</th>
+          <th onclick="setActorSort('hit_pct')">Hit %</th>
+          <th onclick="setActorSort('healing_done')">Healing Done</th>
+          <th onclick="setActorSort('healing_received')">Healing Recv</th>
+          <th>Show</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${actors.map((a) => `
+          <tr class="actor-row ${expandedActors.has(a.actor) ? 'expanded' : ''}" onclick="toggleActorExpanded('${a.actor.replace(/'/g, "\\'")}')">
+            <td>${expandedActors.has(a.actor) ? '▼' : '▶'} ${formatActorName(a.actor, escapeHtml)}</td>
+            <td>${a.dps}</td><td>${a.damage_done}</td><td>${formatTakenWithMitigation(a.damage_taken, a.damage_absorbed, a.damage_blocked)}</td><td>${a.hits}</td><td>${a.misses}</td><td>${a.hit_pct}</td><td>${a.healing_done}</td><td>${a.healing_received ?? 0}</td>
+            <td><input type="checkbox" ${a.hidden ? '' : 'checked'} onclick="event.stopPropagation()" onchange="toggleActor('${a.actor.replace(/'/g, "\\'")}', this.checked)"/></td>
+          </tr>
+          ${expandedActors.has(a.actor) ? renderActorBreakdown(a) : ''}
+        `).join('')}
+      </tbody>
+    </table>
+    ${charmDamageSection}
+    ${potentialCharmDamageSection}
+    ${healingByAbilitySection}
+  `;
+  const renderedActorTable = detailPanel.querySelector('.actor-table');
+  if(renderedActorTable) renderedActorTable.scrollLeft = actorTableScrollLeft;
+  lastDetailRenderSignature = nextDetailRenderSignature;
+}
+
+function setActorSort(key){
+  if(actorSort.key === key) actorSort.desc = !actorSort.desc;
+  else actorSort = {key, desc: key !== 'actor'};
+  renderDetail();
+}
+
+function setBreakdownSort(key){
+  if(breakdownSort.key === key) breakdownSort.desc = !breakdownSort.desc;
+  else breakdownSort = { key, desc: key !== 'name' && key !== 'source_type' };
+  renderDetail();
+}
+
+function toggleActorExpanded(actorName){
+  if(expandedActors.has(actorName)) expandedActors.delete(actorName);
+  else expandedActors.add(actorName);
+  renderDetail();
+}
+
+async function toggleActor(actorName, shown){
+  if(!selectedEncounterId) return;
+  await api(`/api/encounters/${selectedEncounterId}/actor-visibility`, 'POST', { actor_name: actorName, hidden: !shown });
+  await selectEncounter(selectedEncounterId);
+}
+
+async function deleteEncounter(event, id){
+  event.stopPropagation();
+  await api(`/api/encounters/${id}/delete`, 'POST');
+  if(selectedEncounterId === id){ selectedEncounterId = null; encounterDetail = null; }
+  await refreshEncounters();
+}
+
+async function mergeSelected(){
+  const ids = [...selectedMergeIds];
+  if(ids.length < 2){ alert('Select at least two encounters.'); return; }
+  await api('/api/encounters/merge', 'POST', { encounter_ids: ids });
+  selectedMergeIds.clear();
+  await refreshEncounters();
+}
+
+async function clearAllEncounters(){
+  if(!confirm('Clear all encounters? This cannot be undone.')) return;
+  await api('/api/encounters/clear', 'POST');
+  selectedMergeIds.clear();
+  selectedEncounterId = null;
+  encounterDetail = null;
+  await refreshEncounters();
+}
+
+async function manualEnd(){
+  try { await api('/api/encounters/end-active', 'POST'); }
+  catch(err){ console.warn(err); }
+  await refreshEncounters();
+}
+
+async function saveEncounterSettings(){
+  const s = await api('/api/settings');
+  s.encounter_inactivity_timeout_s = Number(timeoutInput.value || 5);
+  s.manual_end_hotkey_enabled = hotkeyEnabled.checked;
+  s.manual_end_hotkey_binding = hotkeyBinding.value || 'Shift+F3';
+  await api('/api/settings', 'PUT', s);
+}
+
+async function refreshSettings(){
+  const s = await api('/api/settings');
+  timeoutInput.value = s.encounter_inactivity_timeout_s ?? 5;
+  hotkeyEnabled.checked = Boolean(s.manual_end_hotkey_enabled);
+  hotkeyBinding.value = s.manual_end_hotkey_binding || 'Shift+F3';
+  encounterFilterMode = s.encounter_filter_mode || 'none';
+  encounterPartyMembers = Array.isArray(s.encounter_party_members)
+    ? s.encounter_party_members.slice(0, MAX_PARTY_MEMBERS).map((entry) => {
+      if(typeof entry === 'string'){
+        return { name: entry, pet_name: '', pet_enabled: false };
+      }
+      return {
+        name: String(entry?.name || ''),
+        pet_name: String(entry?.pet_name || ''),
+        pet_enabled: Boolean(String(entry?.pet_name || '').trim()),
+      };
+    })
+    : [];
+  renderEncounterFilterControls();
+}
+
+function initializeAutoFollowLatestEncounter(){
+  try {
+    const storedValue = window.localStorage.getItem(AUTO_FOLLOW_LATEST_STORAGE_KEY);
+    autoFollowLatestEncounter = storedValue === null ? true : storedValue === 'true';
+  } catch {
+    autoFollowLatestEncounter = true;
+  }
+  autoFollowLatestEncounterInput.checked = autoFollowLatestEncounter;
+}
+
+function onAutoFollowLatestEncounterChange(){
+  autoFollowLatestEncounter = autoFollowLatestEncounterInput.checked;
+  try {
+    window.localStorage.setItem(AUTO_FOLLOW_LATEST_STORAGE_KEY, autoFollowLatestEncounter ? 'true' : 'false');
+  } catch {
+    // Storage can be unavailable in private or embedded browser contexts.
+  }
+}
+
+function renderEncounterFilterControls(){
+  encounterFilterMode = encounterFilterMode || 'none';
+  encounterFilterMode = ['none', 'solo', 'party'].includes(encounterFilterMode) ? encounterFilterMode : 'none';
+  encounterFilterModeInput.value = encounterFilterMode;
+  partyConfigSectionEl.hidden = encounterFilterMode !== 'party';
+  if(encounterFilterMode !== 'party'){
+    partyConfigSectionEl.open = false;
+    partyConfigBodyEl.innerHTML = '<div class="small">Switch to Party mode to configure members.</div>';
+    return;
+  }
+  const canAdd = encounterPartyMembers.length < MAX_PARTY_MEMBERS;
+  const escapeAttr = (value) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const rowsHtml = encounterPartyMembers.map((member, index) => {
+    const ownerName = String(member?.name || '');
+    const petName = String(member?.pet_name || '');
+    const petEnabled = Boolean(member?.pet_enabled);
+    const addPetButton = ownerName.trim() && !petEnabled
+      ? `<button class="icon-btn" title="Add pet" onclick="addPartyPet(${index})">+ pet</button>`
+      : '';
+    const petRow = petEnabled
+      ? `
+        <div class="party-pet-row">
+          <span class="party-pet-prefix">┗</span>
+          <input type="text" value="${escapeAttr(petName)}" oninput="updatePartyPet(${index}, this.value)" placeholder="Pet name"/>
+          <button class="icon-btn" title="Remove pet" onclick="removePartyPet(${index})">✖</button>
+        </div>
+      `
+      : '';
+    return `
+      <div class="party-row">
+        <input type="text" value="${escapeAttr(ownerName)}" oninput="updatePartyMember(${index}, this.value)" placeholder="Party member name"/>
+        ${addPetButton}
+        <button class="icon-btn" title="Remove party member" onclick="removePartyMember(${index})">✖</button>
+      </div>
+      ${petRow}
+    `;
+  }).join('');
+  partyConfigBodyEl.innerHTML = `
+    <div class="party-header">
+      <div class="small">Party members (${encounterPartyMembers.length}/${MAX_PARTY_MEMBERS})</div>
+      <div class="party-actions">
+        ${canAdd ? '<button onclick="addPartyMember()">+</button>' : ''}
+      </div>
+    </div>
+    ${rowsHtml || '<div class="small">No party members configured.</div>'}
+  `;
+}
+
+async function persistEncounterFilterSettings(){
+  const s = await api('/api/settings');
+  s.encounter_filter_mode = encounterFilterMode;
+  const usedNames = new Set();
+  s.encounter_party_members = encounterPartyMembers
+    .map((entry) => ({
+      name: String(entry?.name || '').trim(),
+      pet_name: entry?.pet_enabled ? String(entry?.pet_name || '').trim() : '',
+    }))
+    .filter((entry) => {
+      const ownerKey = entry.name.toLowerCase();
+      if(!ownerKey || ownerKey === 'you' || usedNames.has(ownerKey)) return false;
+      usedNames.add(ownerKey);
+      const petKey = entry.pet_name.toLowerCase();
+      if(!petKey || petKey === 'you' || usedNames.has(petKey)) entry.pet_name = '';
+      if(entry.pet_name) usedNames.add(petKey);
+      return true;
+    })
+    .slice(0, MAX_PARTY_MEMBERS);
+  await api('/api/settings', 'PUT', s);
+}
+
+async function onEncounterFilterModeChange(){
+  const nextMode = encounterFilterModeInput.value || 'none';
+  encounterFilterMode = ['none', 'solo', 'party'].includes(nextMode) ? nextMode : 'none';
+  if(encounterFilterMode !== 'party'){
+    encounterPartyMembers = [];
+  }
+  renderEncounterFilterControls();
+  await persistEncounterFilterSettings();
+}
+
+async function addPartyMember(){
+  if(encounterFilterMode !== 'party') return;
+  if(encounterPartyMembers.length >= MAX_PARTY_MEMBERS) return;
+  encounterPartyMembers.push({ name: '', pet_name: '', pet_enabled: false });
+  renderEncounterFilterControls();
+  await persistEncounterFilterSettings();
+}
+
+async function removePartyMember(index){
+  if(encounterFilterMode !== 'party') return;
+  encounterPartyMembers.splice(index, 1);
+  renderEncounterFilterControls();
+  await persistEncounterFilterSettings();
+}
+
+let partyMemberSaveTimer = null;
+function updatePartyMember(index, value){
+  if(!encounterPartyMembers[index]) return;
+  encounterPartyMembers[index].name = value;
+  if(partyMemberSaveTimer){
+    clearTimeout(partyMemberSaveTimer);
+  }
+  partyMemberSaveTimer = setTimeout(async () => {
+    await persistEncounterFilterSettings();
+  }, 250);
+}
+
+async function addPartyPet(index){
+  if(!encounterPartyMembers[index]) return;
+  encounterPartyMembers[index].pet_enabled = true;
+  encounterPartyMembers[index].pet_name = encounterPartyMembers[index].pet_name || '';
+  renderEncounterFilterControls();
+}
+
+async function removePartyPet(index){
+  if(!encounterPartyMembers[index]) return;
+  encounterPartyMembers[index].pet_enabled = false;
+  encounterPartyMembers[index].pet_name = '';
+  renderEncounterFilterControls();
+  await persistEncounterFilterSettings();
+}
+
+let partyPetSaveTimer = null;
+function updatePartyPet(index, value){
+  if(!encounterPartyMembers[index]) return;
+  encounterPartyMembers[index].pet_enabled = true;
+  encounterPartyMembers[index].pet_name = value;
+  if(partyPetSaveTimer){
+    clearTimeout(partyPetSaveTimer);
+  }
+  partyPetSaveTimer = setTimeout(async () => {
+    await persistEncounterFilterSettings();
+  }, 250);
+}
+
+function hotkeyMatches(event, binding){
+  const normalized = (binding || '').toLowerCase();
+  return normalized === 'shift+f3' && event.shiftKey && event.key.toLowerCase() === 'f3';
+}
+
+document.addEventListener('keydown', async (event) => {
+  if(!hotkeyEnabled.checked) return;
+  if(hotkeyMatches(event, hotkeyBinding.value)){
+    event.preventDefault();
+    await manualEnd();
+  }
+});
+
+async function refreshEncounters(){
+  const previousLatestEncounterId = lastKnownLatestEncounterId;
+  encounters = await api('/api/encounters');
+  const latestEncounter = getLatestEncounter(encounters);
+  lastKnownLatestEncounterId = latestEncounter?.id ?? null;
+  const live = encounters.find((e) => e.active);
+  const parser = await api('/api/status');
+  const parserStatus = parser.running ? 'running' : 'stopped';
+  const liveStatusText = live ? `Live: ${live.label}` : 'Live: none';
+  liveStatus.textContent = `Parser: ${parserStatus} | ${liveStatusText}`;
+  const wasViewingLatestEncounter = selectedEncounterId === null || selectedEncounterId === previousLatestEncounterId;
+  if(autoFollowLatestEncounter && latestEncounter && wasViewingLatestEncounter && selectedEncounterId !== latestEncounter.id){
+    await selectEncounter(latestEncounter.id);
+    return;
+  }
+  renderEncounterList();
+  if(selectedEncounterId){
+    try { encounterDetail = await api(`/api/encounters/${selectedEncounterId}`); }
+    catch{ encounterDetail = null; }
+  }
+  renderDetail();
+}
+
+async function startParser(){ await api('/api/parser/start', 'POST'); await refreshEncounters(); }
+async function stopParser(){ await api('/api/parser/stop', 'POST'); await refreshEncounters(); }
+
+async function ensureCombatRegionConfigured(){
+  const settings = await api('/api/settings');
+  if(!settings.combat_region_configured){
+    window.location.href = '/settings';
+    return false;
+  }
+  return true;
+}
+
+async function initialize(){
+  const configured = await ensureCombatRegionConfigured();
+  if(!configured) return;
+  initializeAutoFollowLatestEncounter();
+  await refreshSettings();
+  await refreshEncounters();
+  setInterval(refreshEncounters, 1500);
+}
+
+initialize();
+</script>
+</body>
+</html>

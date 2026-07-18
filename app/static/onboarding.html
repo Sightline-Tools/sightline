@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Set up Sightline's local-only combat capture." />
+  <meta name="theme-color" content="#0F1117" />
+  <title>Welcome to Sightline</title>
+  <link rel="icon" href="/favicons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicons/favicon-16x16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-48x48.png" sizes="48x48" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="stylesheet" href="/brand/web/sightline-tokens.css" />
+  <link rel="stylesheet" href="/static/sightline.css" />
+  <style>
+    body { margin: 0; min-height: 100vh; background: #181926; color: #cad3f5; font-family: Inter, "Segoe UI", sans-serif; }
+    main { width: min(760px, calc(100% - 32px)); margin: 40px auto; }
+    .onboarding-logo { display: block; width: min(420px, 90%); height: auto; margin: 0 auto 28px; }
+    .step { padding: 24px; margin: 16px 0; border: 1px solid #363a4f; border-radius: 12px; background: #1e2030; }
+    .step h2 { margin-top: 0; }
+    .step[aria-disabled="true"] { opacity: .5; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    button { padding: 10px 15px; color: #181926; background: #8aadf4; border: 0; border-radius: 7px; font-weight: 700; cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .5; }
+    .secondary { color: #cad3f5; background: #363a4f; }
+    .result { min-height: 1.5em; color: #a5adcb; white-space: pre-wrap; }
+    .safety { border-left: 4px solid #eed49f; padding-left: 14px; }
+    .hint { color: #a5adcb; font-size: .94rem; }
+  </style>
+</head>
+<body>
+<main>
+  <img class="onboarding-logo" src="/brand/logos/svg/sightline-logo-with-tagline-dark.svg" alt="Sightline — Gameplay, brought into focus." />
+  <section class="step">
+    <h1>Welcome to Sightline</h1>
+    <p>Sightline is a local-first combat parser. It runs entirely on this computer: capture, OCR, encounter data, and settings stay local unless you explicitly export them.</p>
+    <p class="safety"><strong>Passive-capture boundary:</strong> Sightline only reads pixels inside the rectangle you select. Select only the combat text you want to parse and avoid areas that may show private messages or personal information.</p>
+    <p class="hint">For the most accurate setup, open your game first and arrange its combat text where you normally keep it. If you would rather look around first, you can return to this guide from Settings whenever you are ready.</p>
+    <div class="actions"><button id="exploreButton" class="secondary" type="button">Explore Sightline First</button></div>
+    <p class="result" id="welcomeResult" role="status"></p>
+  </section>
+
+  <section class="step" id="regionStep">
+    <h2>1. Select the combat region</h2>
+    <p>Keep the game and its combat text visible, then drag across only the text area you want Sightline to read. The selector supports display scaling and multiple monitors.</p>
+    <p class="hint">Optional foreground-application restriction is available later in Settings.</p>
+    <div class="actions"><button id="selectButton" type="button">Select Combat Region</button></div>
+    <p class="result" id="regionResult" role="status"></p>
+  </section>
+
+  <section class="step" id="ocrStep" aria-disabled="true">
+    <h2>2. Test OCR</h2>
+    <p>Sightline will capture one frame and recognize it in memory. The screenshot is not saved.</p>
+    <div class="actions"><button id="testButton" type="button" disabled>Run One-Frame Test</button></div>
+    <p class="result" id="ocrResult" role="status"></p>
+  </section>
+
+  <section class="step" id="finishStep" aria-disabled="true">
+    <h2>3. Start parsing</h2>
+    <p>Your setup is ready. You can change the region and privacy controls later in Settings.</p>
+    <div class="actions"><button id="startButton" type="button" disabled>Start Parsing</button><button id="finishButton" class="secondary" type="button" disabled>Finish Without Starting</button></div>
+    <p class="result" id="finishResult" role="status"></p>
+  </section>
+</main>
+<script>
+async function api(path, method='GET', body=null) {
+  const response = await fetch(path, {method, credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : null});
+  if (!response.ok) {
+    let detail = `Request failed (${response.status})`;
+    const responseText = await response.text();
+    if (responseText) {
+      try { detail = JSON.parse(responseText).detail || responseText; }
+      catch (_error) { detail = responseText; }
+    }
+    throw new Error(detail);
+  }
+  return response.json();
+}
+
+function setRegionReady(settings) {
+  const ready = Boolean(settings.combat_region_configured);
+  testButton.disabled = !ready;
+  ocrStep.setAttribute('aria-disabled', String(!ready));
+  if (ready) regionResult.textContent = `Selected (${settings.capture_x}, ${settings.capture_y}) — ${settings.capture_width} × ${settings.capture_height}px`;
+}
+
+selectButton.addEventListener('click', async () => {
+  selectButton.disabled = true;
+  regionResult.textContent = 'Opening the selector… drag across the combat text area, or press Esc to cancel.';
+  try { setRegionReady(await api('/api/settings/select-region', 'POST')); }
+  catch (error) { regionResult.textContent = `Selection was not saved: ${error.message}`; }
+  finally { selectButton.disabled = false; }
+});
+
+testButton.addEventListener('click', async () => {
+  testButton.disabled = true;
+  ocrResult.textContent = 'Capturing one frame and testing OCR…';
+  try {
+    const result = await api('/api/setup/test-ocr', 'POST');
+    const preview = result.recognized_lines.length ? `\nRecognized: ${result.recognized_lines.slice(0, 3).join(' | ')}` : '\nNo text was visible, but the OCR pipeline completed successfully.';
+    ocrResult.textContent = `OCR is working.${preview}`;
+    startButton.disabled = false;
+    finishButton.disabled = false;
+    finishStep.setAttribute('aria-disabled', 'false');
+  } catch (error) {
+    ocrResult.textContent = `OCR test failed: ${error.message}`;
+    testButton.disabled = false;
+  }
+});
+
+async function finish(startParser) {
+  startButton.disabled = true;
+  finishButton.disabled = true;
+  finishResult.textContent = 'Saving setup…';
+  try {
+    const settings = await api('/api/settings');
+    settings.onboarding_completed = true;
+    await api('/api/settings', 'PUT', settings);
+    if (startParser) await api('/api/parser/start', 'POST');
+    location.assign('/');
+  } catch (error) {
+    finishResult.textContent = `Could not finish setup: ${error.message}`;
+    startButton.disabled = false;
+    finishButton.disabled = false;
+  }
+}
+async function explore() {
+  exploreButton.disabled = true;
+  welcomeResult.textContent = 'Opening Sightline…';
+  try {
+    const settings = await api('/api/settings');
+    settings.onboarding_completed = true;
+    await api('/api/settings', 'PUT', settings);
+    location.assign('/');
+  } catch (error) {
+    welcomeResult.textContent = `Could not open Sightline: ${error.message}`;
+    exploreButton.disabled = false;
+  }
+}
+exploreButton.addEventListener('click', explore);
+startButton.addEventListener('click', () => finish(true));
+finishButton.addEventListener('click', () => finish(false));
+api('/api/settings').then(setRegionReady).catch((error) => { regionResult.textContent = error.message; });
+</script>
+</body>
+</html>

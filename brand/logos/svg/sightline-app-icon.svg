@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Sightline app icon">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1D2330"/><stop offset="1" stop-color="#0B0D12"/></linearGradient>
+  <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#2563FF"/><stop offset="1" stop-color="#7B5CFF"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="14" stdDeviation="18" flood-opacity=".22"/></filter>
+</defs>
+<rect x="24" y="24" width="464" height="464" rx="108" fill="url(#bg)"/>
+<g transform="translate(76 76) scale(3)">
+  <g fill="none" stroke="#F8FAFC" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><path d="M34 10H10V34"/><path d="M86 10H110V34"/><path d="M10 86V110H34"/><path d="M86 110H110V86"/></g>
+  <polygon points="36,67 104,39 39,78" fill="url(#beam)"/>
+  <g fill="url(#beam)"><rect x="61" y="84" width="10" height="18" rx="2"/><rect x="76" y="69" width="10" height="33" rx="2"/><rect x="91" y="53" width="10" height="49" rx="2"/></g>
+  <circle cx="28" cy="72" r="12" fill="#F8FAFC"/><circle cx="28" cy="72" r="6.5" fill="#151923"/><circle cx="28" cy="72" r="3.5" fill="#2563FF"/>
+</g></svg>

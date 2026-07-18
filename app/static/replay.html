@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Validate capture and recognition output with Sightline replay tools." />
+  <meta name="theme-color" content="#0F1117" />
+  <meta property="og:title" content="Sightline — Replay Harness" />
+  <meta property="og:description" content="Gameplay, brought into focus." />
+  <meta property="og:type" content="website" />
+  <title>Replay Harness — Sightline</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicons/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicons/favicon-16x16.png" sizes="16x16" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-32x32.png" sizes="32x32" type="image/png" />
+  <link rel="icon" href="/favicons/favicon-48x48.png" sizes="48x48" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicons/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <script defer src="/static/sightline-shell.js"></script>
+  <link rel="stylesheet" href="/brand/web/sightline-tokens.css" />
+  <style>
+    :root {
+      --base: #24273a;
+      --mantle: #1e2030;
+      --crust: #181926;
+      --text: #cad3f5;
+      --subtext0: #a5adcb;
+      --surface0: #363a4f;
+      --surface1: #494d64;
+      --blue: #8aadf4;
+      --green: #a6da95;
+      --teal: #8bd5ca;
+      --red: #ed8796;
+      --mauve: #c6a0f6;
+      --peach: #f5a97f;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: var(--base); color: var(--text); }
+    .topbar { padding: 10px 12px; min-height: 56px; background: var(--crust); color: var(--text); display:flex; align-items:center; gap:14px; border-bottom: 1px solid var(--surface0); }
+    .topbar-controls { display:flex; gap:8px; min-width: 150px; }
+    .topbar-nav { display:flex; gap:14px; align-items:center; }
+    .topbar a { color:var(--blue); text-decoration:none; font-weight: 600; }
+    .topbar a:hover { color: var(--teal); }
+    .topbar-current { color: var(--text); font-weight: 600; }
+    #statusLine { margin-left: auto; }
+    .container { padding: 12px; display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .panel { background:var(--mantle); border:1px solid var(--surface0); border-radius:6px; padding:12px; }
+    .panel h3 { margin-top: 0; }
+    .field { margin-bottom:10px; display:flex; flex-direction:column; gap:4px; }
+    .field input { padding:6px; font-size:14px; }
+    .inline { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    button, input {
+      background: var(--surface0);
+      color: var(--text);
+      border: 1px solid var(--surface1);
+      border-radius: 6px;
+    }
+    input[type="checkbox"] { accent-color: var(--blue); }
+    button { padding:7px 10px; cursor:pointer; }
+    button:hover { background: var(--surface1); }
+    #replayStatus { font-family: monospace; font-size: 12px; white-space: pre-wrap; background:var(--crust); color:var(--green); padding:10px; border-radius:6px; border:1px solid var(--surface0); }
+    #compareResult { background:var(--crust); color:var(--text); padding:10px; border-radius:6px; min-height:180px; border:1px solid var(--surface0); }
+    .full { grid-column: 1 / span 2; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .summary-card {
+      background: var(--crust);
+      border: 1px solid var(--surface0);
+      border-radius: 6px;
+      padding: 8px;
+      font-family: monospace;
+    }
+    .summary-card .label { color: var(--subtext0); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .summary-card .value { color: var(--text); font-size: 16px; margin-top: 4px; }
+    .diff-toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 12px;
+      color: var(--subtext0);
+      flex-wrap: wrap;
+    }
+    .diff-panel {
+      border: 1px solid var(--surface0);
+      border-radius: 6px;
+      background: var(--crust);
+      max-height: 400px;
+      overflow: auto;
+      padding: 8px 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .diff-line {
+      padding: 1px 10px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-left: 3px solid transparent;
+    }
+    .diff-line.context { color: var(--text); }
+    .diff-line.added { color: var(--green); background: rgba(166, 218, 149, 0.14); border-left-color: var(--green); }
+    .diff-line.removed { color: var(--red); background: rgba(237, 135, 150, 0.14); border-left-color: var(--red); }
+    .diff-line.hunk { color: var(--mauve); background: rgba(198, 160, 246, 0.14); border-left-color: var(--mauve); }
+    .diff-line.header { color: var(--blue); background: rgba(138, 173, 244, 0.14); border-left-color: var(--blue); }
+    .compare-error { color: var(--red); font-family: monospace; }
+    .raw-json {
+      margin-top: 10px;
+      background: var(--mantle);
+      border: 1px solid var(--surface0);
+      border-radius: 6px;
+      padding: 10px;
+      white-space: pre-wrap;
+      font-size: 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    .muted { color: var(--subtext0); font-size: 12px; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+  </style>
+  <link rel="stylesheet" href="/static/sightline.css" />
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand-link" href="/" aria-label="Sightline home"><img class="brand-logo" src="/brand/logos/svg/sightline-logo-dark.svg" alt="Sightline" width="360" height="96" /></a>
+    <div class="topbar-controls">
+      <button id="startParserBtn" onclick="startParser()">Start</button>
+      <button onclick="stopParser()">Stop</button>
+    </div>
+    <div class="topbar-nav">
+      <a href="/">Live Log</a>
+      <a href="/encounters">Encounters</a>
+      <a href="/settings">Settings</a>
+      <span class="topbar-current" aria-current="page">Replay Harness</span>
+    </div>
+    <span id="statusLine" role="status" aria-live="polite"></span>
+  </div>
+
+  <div class="container">
+    <header class="page-heading">
+      <div><p class="page-heading__eyebrow">Recognition validation</p><h1>Replay harness</h1><p>Run captured frames through the pipeline and compare recognized output against a known signal.</p></div>
+    </header>
+    <div class="panel">
+      <h3>Replay Controls</h3>
+      <div class="field">
+        <label for="startImagePath">Start image path</label>
+        <input id="startImagePath" type="text" placeholder="/path/to/sample001.png" />
+      </div>
+      <div class="inline">
+        <div class="field" style="flex:1; min-width:160px;">
+          <label for="endIndex">End index (optional)</label>
+          <input id="endIndex" type="number" />
+        </div>
+        <div class="field" style="flex:1; min-width:160px;">
+          <label for="frameDelay">Frame delay ms (optional)</label>
+          <input id="frameDelay" type="number" />
+        </div>
+        <div class="field" style="flex:1; min-width:160px;">
+          <label for="repeatCount">Repeat count</label>
+          <input id="repeatCount" type="number" min="1" value="1" />
+        </div>
+      </div>
+      <div class="inline">
+        <label><input id="forcePytesseract" type="checkbox"/> Force pytesseract (disable tesserocr)</label>
+      </div>
+      <div class="inline">
+        <button onclick="startReplay()">Run Replay</button>
+        <button onclick="stopReplay()">Stop Replay</button>
+      </div>
+      <p>Replay status</p>
+      <div id="replayStatus">Loading…</div>
+    </div>
+
+    <div class="panel">
+      <h3>Expected Log Comparison</h3>
+      <div class="field">
+        <label for="expectedFilePath">Expected log file path</label>
+        <input id="expectedFilePath" type="text" placeholder="data/exports/expected_baseline.log" />
+      </div>
+      <div class="inline">
+        <label><input id="strictMode" type="checkbox"/> Strict compare</label>
+        <label><input id="includeMetadata" type="checkbox"/> Include metadata</label>
+        <label><input id="writeArtifact" type="checkbox"/> Write artifact</label>
+      </div>
+      <div class="inline">
+        <button onclick="compareReplay()">Compare</button>
+      </div>
+      <p>Diff / result panel</p>
+      <div id="compareResult">No comparison run yet.</div>
+    </div>
+
+    <div class="panel full">
+      <h3>Current Replay Session</h3>
+      <div id="sessionInfo">No session loaded.</div>
+    </div>
+  </div>
+
+<script>
+async function api(path, method='GET', body=null){
+  const res = await fetch(path, {method, headers:{'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : null});
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+function parseOptionalInt(value){
+  if(value === '' || value == null) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatMs(value){
+  if(value == null || !Number.isFinite(value)) return 'n/a';
+  return `${value.toFixed(1)} ms`;
+}
+
+function escapeHtml(text){
+  return String(text)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function parseDiffLinesFromText(diffText){
+  if(!diffText) return [];
+  return diffText.split('\n').map((line) => {
+    let type = 'context';
+    if(line.startsWith('@@')) type = 'hunk';
+    else if(line.startsWith('---') || line.startsWith('+++')) type = 'header';
+    else if(line.startsWith('+')) type = 'added';
+    else if(line.startsWith('-')) type = 'removed';
+    return {type, text: line};
+  });
+}
+
+function renderCompareResult(payload){
+  const summary = payload.summary || {};
+  const diffLines = Array.isArray(payload.diff_lines)
+    ? payload.diff_lines
+    : parseDiffLinesFromText(payload.diff || '');
+
+  const changedOnly = showChangedOnly.checked;
+  const hideHeader = hideDiffHeaders.checked;
+  const showRaw = showRawJson.checked;
+
+  let visibleLines = diffLines;
+  if(changedOnly){
+    visibleLines = visibleLines.filter((line) => ['added', 'removed', 'hunk'].includes(line.type));
+  }
+  if(hideHeader){
+    visibleLines = visibleLines.filter((line) => line.type !== 'header');
+  }
+
+  const summaryHtml = `
+    <div class="summary-grid">
+      <div class="summary-card"><div class="label">Expected Total</div><div class="value">${summary.expected_total ?? 0}</div></div>
+      <div class="summary-card"><div class="label">Actual Total</div><div class="value">${summary.actual_total ?? 0}</div></div>
+      <div class="summary-card"><div class="label">Matches</div><div class="value">${summary.matches ?? 0}</div></div>
+      <div class="summary-card"><div class="label">Missing</div><div class="value">${summary.missing ?? 0}</div></div>
+      <div class="summary-card"><div class="label">Unexpected</div><div class="value">${summary.unexpected ?? 0}</div></div>
+    </div>
+  `;
+
+  const diffHtml = visibleLines.length
+    ? visibleLines.map((line) => `<div class="diff-line ${escapeHtml(line.type)}">${escapeHtml(line.text)}</div>`).join('')
+    : '<div class="diff-line context muted">No diff lines to display for current filters.</div>';
+
+  const rawJsonHtml = showRaw
+    ? `<pre class="raw-json">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`
+    : '';
+
+  compareResult.innerHTML = `
+    ${summaryHtml}
+    <div class="diff-toolbar">
+      <label><input id="showChangedOnly" type="checkbox" ${changedOnly ? 'checked' : ''}/> Show only changed lines</label>
+      <label><input id="hideDiffHeaders" type="checkbox" ${hideHeader ? 'checked' : ''}/> Hide headers (---, +++)</label>
+      <label><input id="showRawJson" type="checkbox" ${showRaw ? 'checked' : ''}/> Show raw JSON</label>
+      <span class="muted">${visibleLines.length} / ${diffLines.length} lines visible</span>
+    </div>
+    <div class="diff-panel">${diffHtml}</div>
+    ${rawJsonHtml}
+  `;
+
+  document.getElementById('showChangedOnly').addEventListener('change', (event) => {
+    showChangedOnly.checked = event.target.checked;
+    renderCompareResult(payload);
+  });
+  document.getElementById('hideDiffHeaders').addEventListener('change', (event) => {
+    hideDiffHeaders.checked = event.target.checked;
+    renderCompareResult(payload);
+  });
+  document.getElementById('showRawJson').addEventListener('change', (event) => {
+    showRawJson.checked = event.target.checked;
+    renderCompareResult(payload);
+  });
+}
+
+async function refreshReplayStatus(){
+  const [liveStatus, replayStatus] = await Promise.all([
+    api('/api/status'),
+    api('/api/replay/status')
+  ]);
+  updateParserControls(replayStatus.running);
+  statusLine.textContent = `Live parser: ${liveStatus.running ? 'running' : 'stopped'} | Replay: ${replayStatus.running ? 'running' : 'stopped'}`;
+  const stages = replayStatus.average_stage_times_ms || {};
+  const backend = replayStatus.ocr_backend || {};
+  replayStatusEl.textContent = [
+    `frames: ${replayStatus.processed_frames ?? 0}`,
+    `ocr backend last used: ${backend.last_backend ?? 'n/a'}`,
+    `forced backend: ${backend.forced_backend ?? 'none'}`,
+    `tesserocr calls: ${backend.tesserocr_calls ?? 0}`,
+    `pytesseract calls: ${backend.pytesseract_calls ?? 0}`,
+    `tesserocr runtime fallbacks: ${backend.tesserocr_fallback_runtime_errors ?? 0}`,
+    `last tesserocr error: ${backend.last_tesserocr_error ?? 'none'}`,
+    `avg processing (legacy): ${formatMs(replayStatus.average_processing_time_ms)}`,
+    `avg decode: ${formatMs(stages.decode_ms)}`,
+    `avg preprocess: ${formatMs(stages.preprocess_ms)}`,
+    `avg tesseract: ${formatMs(stages.tesseract_ms)}`,
+    `avg postprocess: ${formatMs(stages.postprocess_ms)}`,
+    `avg db: ${formatMs(stages.db_ms)}`,
+    `avg total: ${formatMs(stages.total_ms)}`,
+    '',
+    JSON.stringify(replayStatus, null, 2),
+  ].join('\n');
+
+  const current = await api('/api/parser/sessions/current/summary');
+  if(current.session && String(current.session.file_path || '').startsWith('replay:')){
+    const activeState = current.session.active ? 'running' : 'completed';
+    sessionInfo.textContent = `Replay session #${current.session.session_id} (${current.line_count} lines, ${activeState})`;
+  } else {
+    sessionInfo.textContent = 'No replay session currently detected; run replay to generate one.';
+  }
+}
+
+async function startReplay(){
+  const payload = {
+    start_image_path: startImagePath.value.trim(),
+    end_index: parseOptionalInt(endIndex.value),
+    frame_delay_ms: parseOptionalInt(frameDelay.value),
+    repeat_count: Math.max(parseOptionalInt(repeatCount.value) ?? 1, 1),
+    force_pytesseract: forcePytesseract.checked,
+  };
+  if(!payload.start_image_path){
+    alert('Start image path is required.');
+    return;
+  }
+  await api('/api/replay/start', 'POST', payload);
+  await refreshReplayStatus();
+}
+
+async function stopReplay(){
+  await api('/api/replay/stop', 'POST');
+  await refreshReplayStatus();
+}
+
+async function startParser(){
+  if(startParserBtn.disabled){
+    return;
+  }
+  await api('/api/parser/start', 'POST');
+  await refreshReplayStatus();
+}
+
+async function stopParser(){
+  await api('/api/parser/stop', 'POST');
+  await refreshReplayStatus();
+}
+
+async function compareReplay(){
+  compareResult.textContent = 'Comparing...';
+  const current = await api('/api/parser/sessions/current/summary');
+  if(!current.session){
+    compareResult.textContent = 'No parser session found yet.';
+    return;
+  }
+  if(!String(current.session.file_path || '').startsWith('replay:')){
+    compareResult.textContent = 'Current session is not a replay session. Run replay first.';
+    return;
+  }
+  if(current.session.active){
+    compareResult.textContent = 'Replay session is still active. Stop replay before comparing.';
+    return;
+  }
+
+  const form = new FormData();
+  form.append('session_id', current.session.session_id);
+  if(expectedFilePath.value.trim()) form.append('expected_file_path', expectedFilePath.value.trim());
+  form.append('strict', strictMode.checked ? 'true' : 'false');
+  form.append('include_metadata', includeMetadata.checked ? 'true' : 'false');
+  form.append('write_artifact', writeArtifact.checked ? 'true' : 'false');
+
+  const res = await fetch('/api/replay/compare', { method: 'POST', body: form });
+  if(!res.ok){
+    compareResult.innerHTML = `<div class="compare-error">Compare failed: ${escapeHtml(await res.text())}</div>`;
+    return;
+  }
+  const payload = await res.json();
+  renderCompareResult(payload);
+}
+
+const replayStatusEl = document.getElementById('replayStatus');
+const statusLine = document.getElementById('statusLine');
+const sessionInfo = document.getElementById('sessionInfo');
+const compareResult = document.getElementById('compareResult');
+const startParserBtn = document.getElementById('startParserBtn');
+
+const showChangedOnly = document.createElement('input');
+showChangedOnly.type = 'checkbox';
+const hideDiffHeaders = document.createElement('input');
+hideDiffHeaders.type = 'checkbox';
+const showRawJson = document.createElement('input');
+showRawJson.type = 'checkbox';
+
+function updateParserControls(replayRunning){
+  startParserBtn.disabled = replayRunning;
+  startParserBtn.title = replayRunning ? 'Stop replay before starting live parser capture.' : '';
+}
+
+refreshReplayStatus();
+setInterval(refreshReplayStatus, 1500);
+</script>
+</body>
+</html>
