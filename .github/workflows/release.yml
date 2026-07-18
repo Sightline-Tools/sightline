@@ -79,8 +79,8 @@ jobs:
           if ((Get-AuthenticodeSignature -LiteralPath $exe).Status -ne "NotSigned") {
             throw "The unsigned release stage unexpectedly produced a signed application"
           }
-          & $exe --smoke-test
-          if ($LASTEXITCODE -ne 0) { throw "Packaged smoke test failed" }
+          $smoke = Start-Process -FilePath $exe.Path -ArgumentList "--smoke-test" -NoNewWindow -Wait -PassThru
+          if ($smoke.ExitCode -ne 0) { throw "Packaged smoke test failed with exit code $($smoke.ExitCode)" }
 
       - name: Install pinned, verified Inno Setup compiler
         shell: pwsh
