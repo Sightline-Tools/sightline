@@ -13,7 +13,6 @@ jobs:
     name: Build, acceptance test, and publish unsigned release
     runs-on: windows-2025
     timeout-minutes: 180
-    environment: public-beta
     permissions:
       attestations: write
       contents: write
