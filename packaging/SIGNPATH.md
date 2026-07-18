@@ -17,4 +17,4 @@ Set these repository variables:
 - `SIGNPATH_UNINSTALLER_ARTIFACT_CONFIGURATION_SLUG`
 - `SIGNPATH_INSTALLER_ARTIFACT_CONFIGURATION_SLUG`
 
-Set `SIGNPATH_API_TOKEN` as an Actions secret. The token must belong to a SignPath user with submitter permission only. The existing protected GitHub environment named `public-beta` can continue to provide the final manual release gate after the signing stages are added.
+Set `SIGNPATH_API_TOKEN` as an Actions secret. The token must belong to a SignPath user with submitter permission only. The private Gatekeeper release authorization remains the final manual gate before the public version tag is created; SignPath approval then governs each signing stage.

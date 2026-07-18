@@ -83,14 +83,15 @@ The launcher also supports internal `--smoke-test`, `--no-browser`, and `--shutd
 
 The tag-driven Windows workflow in `.github/workflows/release.yml` is the authoritative unsigned public-beta build. A tag must exactly match the semantic version in `pyproject.toml` (for example, `v0.1.0`). The workflow:
 
-- installs `requirements.lock` and runs the complete tests;
+- accepts only a Gatekeeper-authorized tag after the matching public snapshot has passed the complete test suite;
+- installs the locked runtime and pinned build dependencies on a clean GitHub-hosted runner;
 - generates a nine-layer Windows icon from `brand/favicons/android-chrome-512x512.png`, a raster rendering of the canonical `brand/favicons/favicon.svg` artwork;
 - builds Tesseract 5.5.2 from its pinned official source commit and checks out a pinned official English model;
 - produces a PyInstaller one-folder application and per-user Inno Setup installer;
 - explicitly verifies that the application, uninstaller, and installer are unsigned;
 - verifies install, OCR, authentication, second launch, port fallback, shutdown, upgrade, and both uninstall paths;
 - scans with Microsoft Defender and emits SHA-256 checksums, a CycloneDX SBOM, reviewed third-party notices, and GitHub build provenance;
-- publishes the installer with an explicit unsigned-release notice as a GitHub prerelease after protected-environment approval.
+- publishes the installer with an explicit unsigned-release notice as a GitHub prerelease.
 
 The transition plan for a later signed release is documented in [packaging/SIGNPATH.md](packaging/SIGNPATH.md). Windows 11 clean-machine acceptance, Windows Defender review, redistribution review, checksums, SBOM generation, and build provenance remain release gates. Portable ZIP releases are not published.
 

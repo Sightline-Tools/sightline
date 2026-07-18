@@ -6,7 +6,7 @@ The release workflow still requires:
 
 - a tag whose `vX.Y.Z` value exactly matches `pyproject.toml`;
 - a GitHub-hosted clean build that passes tests and packaging checks;
-- manual approval of the protected `public-beta` GitHub environment;
+- explicit private release authorization before Gatekeeper creates the public version tag;
 - explicit verification that Sightline-owned executables, the uninstaller, and the installer have Authenticode status `NotSigned`;
 - install, OCR, upgrade, uninstall, Microsoft Defender, and clean-machine acceptance checks;
 - published SHA-256 checksums, a CycloneDX SBOM, third-party notices, and GitHub build provenance.
