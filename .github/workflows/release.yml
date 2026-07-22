@@ -37,6 +37,19 @@ jobs:
           python -m pip install --requirement requirements.lock
           python -m pip install pyinstaller==6.21.0 cyclonedx-bom==7.2.2
 
+      - name: Install verified in-process OCR backend
+        shell: pwsh
+        run: |
+          $runtime = Get-Content -LiteralPath "packaging/tesserocr-runtime.json" -Raw | ConvertFrom-Json
+          $wheel = Join-Path $env:RUNNER_TEMP $runtime.wheel.filename
+          Invoke-WebRequest -Uri $runtime.wheel.url -OutFile $wheel
+          $actualHash = (Get-FileHash -LiteralPath $wheel -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $runtime.wheel.sha256) {
+            throw "tesserocr wheel hash mismatch: $actualHash"
+          }
+          python -m pip install --no-deps $wheel
+          python -c "import tesserocr; assert tesserocr.tesseract_version().startswith('tesseract 5.5.2')"
+
       - name: Verify release version and write build metadata
         id: version
         shell: pwsh
@@ -48,9 +61,8 @@ jobs:
       - name: Generate Windows icon from Sightline favicon artwork
         run: python scripts/generate_windows_icon.py
 
-      - name: Build verified Tesseract 5.5.2 runtime
-        shell: pwsh
-        run: ./scripts/prepare_tesseract.ps1
+      - name: Prepare verified in-process OCR runtime data
+        run: python scripts/prepare_ocr_runtime.py
 
       - name: Generate and audit third-party notices
         run: python scripts/generate_third_party_notices.py
