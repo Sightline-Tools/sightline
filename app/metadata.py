@@ -33,8 +33,19 @@ def _build_info() -> dict[str, str]:
 
 
 _BUILD_INFO = _build_info()
-APP_VERSION = os.environ.get("SIGHTLINE_VERSION", _BUILD_INFO.get("version", _project_version()))
-BUILD_COMMIT = os.environ.get("SIGHTLINE_BUILD_COMMIT", _BUILD_INFO.get("commit", "development"))
+
+
+def _metadata_value(environment_name: str, build_key: str, source_default: str) -> str:
+    override = os.environ.get(environment_name)
+    if override is not None:
+        return override
+    if IS_FROZEN:
+        return _BUILD_INFO.get(build_key, source_default)
+    return source_default
+
+
+APP_VERSION = _metadata_value("SIGHTLINE_VERSION", "version", _project_version())
+BUILD_COMMIT = _metadata_value("SIGHTLINE_BUILD_COMMIT", "commit", "development")
 
 
 def app_info(*, debug_mode: bool = False) -> dict[str, str | bool]:

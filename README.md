@@ -1,4 +1,8 @@
-# Sightline
+<p align="center">
+  <img src="brand/social/sightline-og-image-1200x630.png" width="420" alt="Sightline" />
+</p>
+
+#
 
 **Local-first combat parser**
 
