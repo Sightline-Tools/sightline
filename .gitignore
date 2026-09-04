@@ -4,6 +4,7 @@ __pycache__/
 data/
 .ocr-debug
 .worktrees/
+.claude/settings.local.json
 /build/
 /dist/
 /tesseract/
